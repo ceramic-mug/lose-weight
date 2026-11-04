@@ -3,694 +3,244 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lose Weight · Three taps a meal</title>
-<meta name="description" content="A simple weight-loss helper for iPhone and Mac. Log a meal in three taps, exercise in two, and see your real trend. Built on medical and dietetics guidelines.">
-<meta property="og:title" content="Lose Weight · Three taps a meal">
-<meta property="og:description" content="Weight loss for people who don't want to count every calorie.">
+<title>Lose Weight</title>
+<meta name="description" content="Log a meal in three taps. A simple weight-loss app for iPhone and Mac.">
+<meta property="og:title" content="Lose Weight">
+<meta property="og:description" content="Log a meal in three taps.">
 <meta property="og:image" content="assets/icon.png">
 <link rel="icon" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #f6f8f7;
-  --surface: #ffffff;
-  --surface-2: #eef2f1;
-  --ink: #15201d;
-  --ink-2: #4b5a56;
-  --ink-3: #7a8884;
-  --line: #dfe6e3;
-  --accent: #2980ba;
+  --bg: #faf8f4;
+  --ink: #1c1b19;
+  --ink-2: #6b665e;
+  --line: #e4dfd6;
   --teal: #1e9c8a;
   --amber: #c38600;
   --rose: #d6416a;
-  --orange: #e07b33;
   --purple: #6b5bcc;
-  --shadow: 0 1px 2px rgba(20,40,35,.06), 0 8px 30px rgba(20,40,35,.08);
-  --radius: 22px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0e1513;
-    --surface: #17201d;
-    --surface-2: #1f2a27;
-    --ink: #eef4f2;
-    --ink-2: #b3c1bd;
-    --ink-3: #82918d;
-    --line: #2a3734;
-    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
-    color-scheme: dark;
+    --bg: #141412; --ink: #efece6; --ink-2: #9c978e; --line: #2c2a27; color-scheme: dark;
   }
 }
-:root[data-theme="dark"] {
-  --bg: #0e1513; --surface: #17201d; --surface-2: #1f2a27; --ink: #eef4f2; --ink-2: #b3c1bd;
-  --ink-3: #82918d; --line: #2a3734; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
-  color-scheme: dark;
-}
+:root[data-theme="dark"] { --bg: #141412; --ink: #efece6; --ink-2: #9c978e; --line: #2c2a27; color-scheme: dark; }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
-  font: 500 17px/1.55 Nunito, ui-rounded, -apple-system, "SF Pro Rounded", system-ui, sans-serif;
-  overflow-x: hidden;
+  font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
-img { max-width: 100%; display: block; }
-a { color: var(--accent); }
-.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
-h1, h2, h3 { line-height: 1.1; margin: 0; letter-spacing: -.02em; }
-h1 { font-size: clamp(2.4rem, 8vw, 4.4rem); font-weight: 900; }
-h2 { font-size: clamp(1.8rem, 5.5vw, 2.8rem); font-weight: 900; }
-h3 { font-size: 1.2rem; font-weight: 800; }
+main, header, footer { max-width: 680px; margin: 0 auto; padding: 0 20px; }
+a { color: inherit; }
+h1, h2 { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; letter-spacing: -.01em; line-height: 1.02; margin: 0; }
+h1 { font-size: clamp(3.2rem, 13vw, 5.6rem); }
+h2 { font-size: clamp(2.2rem, 8vw, 3.2rem); }
 p { margin: 0; }
-.lede { font-size: clamp(1.05rem, 2.6vw, 1.3rem); color: var(--ink-2); }
-.eyebrow { font-weight: 800; font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); }
-section { padding: 72px 0; }
-.center { text-align: center; }
-.stack > * + * { margin-top: 16px; }
+.sub { color: var(--ink-2); }
 
-/* Nav */
-nav.top {
-  position: sticky; top: 0; z-index: 20;
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
-}
-nav.top .wrap { display: flex; align-items: center; gap: 12px; height: 60px; }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 900; color: var(--ink); text-decoration: none; }
-.brand img { width: 32px; height: 32px; border-radius: 9px; }
-nav.top .links { margin-left: auto; display: flex; gap: 18px; }
-nav.top .links a { color: var(--ink-2); text-decoration: none; font-weight: 700; font-size: .95rem; }
-nav.top .links a:hover { color: var(--ink); }
-@media (max-width: 640px) { nav.top .links a:not(.keep) { display: none; } }
+header { display: flex; align-items: center; gap: 10px; padding-top: 22px; padding-bottom: 22px; font-weight: 600; }
+header img { width: 28px; height: 28px; border-radius: 7px; }
+header a { margin-left: auto; color: var(--ink-2); text-decoration: none; font-weight: 500; font-size: .95rem; }
 
-.btn {
-  display: inline-flex; align-items: center; gap: 8px; border: 0; cursor: pointer;
-  padding: 14px 22px; border-radius: 999px; font: 800 1rem Nunito, system-ui, sans-serif;
-  text-decoration: none; transition: transform .15s ease, box-shadow .15s ease;
-}
-.btn:active { transform: scale(.97); }
-.btn.primary { background: var(--teal); color: #fff; box-shadow: 0 6px 20px color-mix(in srgb, var(--teal) 40%, transparent); }
-.btn.ghost { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
-
-/* Hero */
-.hero { padding: 48px 0 40px; position: relative; overflow: hidden; }
-.hero .wrap { display: grid; gap: 40px; align-items: center; }
-@media (min-width: 880px) { .hero .wrap { grid-template-columns: 1.1fr .9fr; } }
-.hero h1 .hl { background: linear-gradient(120deg, var(--teal), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
-.pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
-.pill { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: .88rem; font-weight: 700; color: var(--ink-2); }
-.blob { position: absolute; inset: -10% -10% auto auto; width: 60vw; max-width: 700px; aspect-ratio: 1; z-index: -1;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--teal) 22%, transparent), transparent); filter: blur(10px); }
-
-/* Phone */
-.phone {
-  width: min(320px, 86vw); margin: 0 auto; aspect-ratio: 9 / 19; border-radius: 46px; padding: 12px;
-  background: linear-gradient(160deg, #2b3533, #0d1312); box-shadow: 0 30px 60px rgba(10,30,25,.28), inset 0 0 0 2px #3c4744;
-  position: relative;
-}
-.phone .screen { height: 100%; border-radius: 36px; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
-.phone .island { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 92px; height: 26px; border-radius: 20px; background: #000; z-index: 3; }
-.screen .status { height: 44px; flex: none; }
-.screen .title { font-weight: 900; font-size: 1.6rem; padding: 0 18px 8px; }
-.screen .body { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-.mini-card { background: var(--surface); border-radius: 16px; padding: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
-.mini-card .h { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: .8rem; color: var(--ink-2); }
-.quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.quick span { border-radius: 14px; padding: 10px 0; color: #fff; text-align: center; font-weight: 800; font-size: .72rem; }
-.ring-row { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
-.bar { height: 8px; border-radius: 99px; background: color-mix(in srgb, var(--orange) 18%, transparent); overflow: hidden; margin-top: 8px; }
-.bar i { display: block; height: 100%; background: var(--orange); border-radius: 99px; width: 0; transition: width 1.2s cubic-bezier(.2,.8,.2,1); }
-
-/* Ring */
-.ring { --p: 0; --c: var(--teal); width: 92px; height: 92px; border-radius: 50%; flex: none; display: grid; place-items: center;
-  background: conic-gradient(var(--c) calc(var(--p) * 1%), color-mix(in srgb, var(--c) 16%, transparent) 0);
-  transition: --p .8s ease; position: relative; }
-.ring::before { content: ""; position: absolute; inset: 13px; border-radius: 50%; background: var(--surface); }
-.ring b { position: relative; font-weight: 900; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
-@property --p { syntax: "<number>"; inherits: false; initial-value: 0; }
-
-/* Cards & grids */
-.grid { display: grid; gap: 16px; }
-@media (min-width: 720px) { .grid.three { grid-template-columns: repeat(3, 1fr); } .grid.two { grid-template-columns: repeat(2, 1fr); } }
-.card { background: var(--surface); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); }
-.icon-chip { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; font-size: 22px; margin-bottom: 12px; }
+section { padding: 56px 0; }
+section + section { border-top: 1px solid var(--line); }
 
 /* Demo */
-.demo { display: grid; gap: 22px; margin-top: 36px; }
-@media (min-width: 880px) { .demo { grid-template-columns: 1.3fr 1fr; align-items: start; } }
-.step { margin-top: 18px; }
-.step-h { display: flex; align-items: center; gap: 10px; font-weight: 800; margin-bottom: 10px; }
-.step-h .n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-2); font-size: .85rem; transition: .2s; }
-.step.active .n { background: var(--teal); color: #fff; }
-.step.done .n { background: var(--teal); color: #fff; }
-.tiles { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
-.tiles.three { grid-template-columns: repeat(3, 1fr); }
-.tile {
-  border: 0; cursor: pointer; border-radius: 16px; padding: 12px 6px; min-height: 78px; background: var(--surface-2); color: var(--ink);
-  font: 800 .85rem Nunito, system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  transition: transform .12s ease, background .2s ease, color .2s ease, opacity .2s;
+.q { margin-top: 28px; color: var(--ink-2); font-size: .95rem; transition: color .2s; }
+.q.on { color: var(--ink); }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.opts button {
+  font: inherit; font-size: 1rem; color: var(--ink); background: transparent; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 999px; padding: 9px 16px;
+  transition: background .15s, color .15s, border-color .15s, opacity .2s;
 }
-.tile .e { font-size: 1.5rem; line-height: 1; }
-.tile:hover { transform: translateY(-2px); }
-.tile:active { transform: scale(.96); }
-.tile.sel { color: #fff; }
-.tile[disabled] { opacity: .35; cursor: not-allowed; transform: none; }
-.log { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; min-height: 40px; }
-.log-item { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border-radius: 12px; padding: 8px 12px; font-weight: 700; font-size: .92rem; animation: pop .35s cubic-bezier(.2,1.4,.4,1); }
-.log-item .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-.log-item .k { margin-left: auto; color: var(--ink-3); font-variant-numeric: tabular-nums; font-size: .85rem; }
-@keyframes pop { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
-.budget-panel { position: sticky; top: 80px; }
-.status-line { font-weight: 900; font-size: 1.3rem; }
-.muted { color: var(--ink-3); font-size: .92rem; }
-.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 140%); background: var(--ink); color: var(--bg); padding: 12px 18px;
-  border-radius: 999px; font-weight: 800; transition: transform .35s cubic-bezier(.2,1.2,.3,1); z-index: 40; white-space: nowrap; }
-.toast.show { transform: translate(-50%, 0); }
+.opts button:hover { border-color: var(--ink-2); }
+.opts button.sel { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.opts button:disabled { opacity: .35; cursor: default; border-color: var(--line); }
+.opts button .d { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
 
-/* Trend */
-.chart-card { margin-top: 32px; }
-.chart-wrap { position: relative; }
-svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
-.chart .grid-line { stroke: var(--line); stroke-width: 1; }
-.chart .axis-label { fill: var(--ink-3); font: 700 11px Nunito, system-ui, sans-serif; }
-.chart .dot { fill: var(--purple); opacity: .35; }
-.chart .trend { fill: none; stroke: var(--purple); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; transition: stroke-dashoffset 2s ease; }
-.chart .goal { stroke: var(--ink-3); stroke-dasharray: 5 5; }
-.legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; font-size: .9rem; color: var(--ink-2); font-weight: 700; }
-.legend i { display: inline-block; vertical-align: middle; margin-right: 6px; }
-.toggle { display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 4px; gap: 4px; }
-.toggle button { border: 0; background: transparent; color: var(--ink-2); padding: 8px 14px; border-radius: 999px; font: 800 .9rem Nunito, system-ui, sans-serif; cursor: pointer; }
-.toggle button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.today { margin-top: 40px; }
+.big { font-family: "Instrument Serif", Georgia, serif; font-size: 4rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.meter { height: 4px; background: var(--line); border-radius: 2px; margin-top: 14px; overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: var(--teal); transition: width .6s cubic-bezier(.2,.8,.2,1), background .3s; }
+ol.log { list-style: none; padding: 0; margin: 16px 0 0; }
+ol.log li { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; animation: in .3s ease; }
+ol.log li .d { width: 8px; height: 8px; border-radius: 50%; flex: none; transform: translateY(-1px); }
+ol.log li span:last-child { margin-left: auto; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+@keyframes in { from { opacity: 0; transform: translateY(-4px); } }
+.reset { font: inherit; font-size: .9rem; color: var(--ink-2); background: none; border: 0; padding: 0; margin-top: 10px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 
-/* Report card */
-.report { display: grid; gap: 16px; margin-top: 32px; }
-@media (min-width: 880px) { .report { grid-template-columns: .9fr 1.1fr; } }
-.grade-row { display: flex; align-items: center; gap: 18px; }
-.grade-ring { width: 120px; height: 120px; }
-.grade-ring b { font-size: 2.4rem; }
-.grade-ring::before { inset: 12px; }
-.score-bars { display: grid; gap: 12px; margin-top: 18px; }
-.score-bars .row { display: grid; grid-template-columns: 110px 1fr 40px; align-items: center; gap: 10px; font-weight: 700; font-size: .92rem; }
-.score-bars .track { height: 10px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
-.score-bars .track i { display: block; height: 100%; border-radius: 99px; width: 0; transition: width 1.2s cubic-bezier(.2,.8,.2,1); }
-.tip { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 16px; background: var(--surface-2); border-left: 4px solid var(--c); }
-.tip + .tip { margin-top: 10px; }
-.tip .e { font-size: 1.3rem; }
-.tip b { display: block; }
-.tip span { color: var(--ink-2); font-size: .93rem; }
+/* Chart */
+svg { width: 100%; height: auto; display: block; margin-top: 28px; overflow: visible; }
+.lbl { fill: var(--ink-2); font: 12px -apple-system, Helvetica, Arial, sans-serif; }
+.pt { fill: var(--purple); opacity: .28; }
+.tr { fill: none; stroke: var(--purple); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke-dashoffset 2.2s ease; }
+.gl { stroke: var(--line); }
 
-/* Guidelines */
-.guides { display: grid; gap: 12px; margin-top: 32px; }
-@media (min-width: 720px) { .guides { grid-template-columns: repeat(2, 1fr); } }
-.guide { display: flex; gap: 14px; align-items: flex-start; }
-.guide .num { font-weight: 900; font-size: 1.6rem; color: var(--teal); min-width: 84px; font-variant-numeric: tabular-nums; }
-.guide small { display: block; color: var(--ink-3); font-weight: 700; margin-top: 2px; }
+/* Facts */
+dl { margin: 28px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 18px 22px; align-items: baseline; }
+dt { font-family: "Instrument Serif", Georgia, serif; font-size: 2rem; line-height: 1; white-space: nowrap; }
+dd { margin: 0; color: var(--ink-2); }
 
-/* Platforms */
-.devices { overflow: hidden; padding: 0 4%; display: flex; justify-content: center; align-items: flex-end; gap: 18px; margin-top: 32px; flex-wrap: wrap; }
-.mac { width: min(520px, 100%); }
-.mac .lid { border-radius: 18px 18px 6px 6px; background: linear-gradient(160deg, #2b3533, #0d1312); padding: 10px; }
-.mac .lid .screen { border-radius: 10px; aspect-ratio: 16/10; background: var(--bg); display: grid; grid-template-columns: 30% 1fr; overflow: hidden; }
-.mac .base { height: 14px; margin: 0 -3%; border-radius: 0 0 14px 14px; background: linear-gradient(#cfd6d4, #9aa4a1); }
-.mac .side { background: var(--surface-2); padding: 12px 8px; display: flex; flex-direction: column; gap: 6px; font-size: .72rem; font-weight: 800; color: var(--ink-2); }
-.mac .side span { padding: 6px 8px; border-radius: 8px; }
-.mac .side span.on { background: var(--teal); color: #fff; }
-.mac .main { padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: start; }
-.mac .main .mini-card { padding: 8px; }
-.spark { width: 100%; height: 40px; }
+footer { padding-top: 32px; padding-bottom: 56px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: .9rem; display: flex; flex-wrap: wrap; gap: 8px 20px; }
+footer a { color: var(--ink-2); }
 
-/* FAQ */
-details { background: var(--surface); border-radius: 16px; padding: 16px 18px; box-shadow: var(--shadow); }
-details + details { margin-top: 10px; }
-summary { cursor: pointer; font-weight: 800; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
-summary::-webkit-details-marker { display: none; }
-summary::after { content: "+"; font-size: 1.3rem; line-height: 1; color: var(--ink-3); transition: transform .2s; }
-details[open] summary::after { transform: rotate(45deg); }
-details p { margin-top: 10px; color: var(--ink-2); }
-
-footer { padding: 40px 0 60px; color: var(--ink-3); font-size: .9rem; border-top: 1px solid var(--line); }
-footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; }
-
-.reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
-.reveal.in { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) {
-  .reveal { opacity: 1; transform: none; transition: none; }
-  * { animation: none !important; transition: none !important; }
-}
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
 
-<nav class="top" aria-label="Main">
-  <div class="wrap">
-    <a class="brand" href="#"><img src="assets/icon.png" alt="">Lose Weight</a>
-    <div class="links">
-      <a href="#try">Try it</a>
-      <a href="#trend">Trend</a>
-      <a href="#science">Science</a>
-      <a class="keep" href="https://github.com/ceramic-mug/lose-weight">GitHub</a>
-    </div>
-  </div>
-</nav>
-
-<header class="hero">
-  <div class="blob" aria-hidden="true"></div>
-  <div class="wrap">
-    <div>
-      <p class="eyebrow">For iPhone &amp; Mac</p>
-      <h1 style="margin-top:12px">Lose weight<br>without counting<br><span class="hl">every bite.</span></h1>
-      <p class="lede" style="margin-top:20px;max-width:34ch">Three taps to log a meal, two to log a workout. Everything else is handled for you.</p>
-      <div class="cta">
-        <a class="btn primary" href="#try">Try the three taps →</a>
-        <a class="btn ghost" href="#science">How it works</a>
-      </div>
-      <div class="pill-row">
-        <span class="pill">🩺 Medical guidelines</span>
-        <span class="pill">🔒 Private by design</span>
-        <span class="pill">⌚ Watch optional</span>
-      </div>
-    </div>
-
-    <div class="phone" aria-label="App preview: Today screen">
-      <div class="screen">
-        <div class="island"></div>
-        <div class="status"></div>
-        <div class="title">Today</div>
-        <div class="body">
-          <div class="quick">
-            <span style="background:var(--accent)">🍽 Food</span>
-            <span style="background:var(--orange)">🏃 Exercise</span>
-            <span style="background:var(--purple)">⚖️ Weight</span>
-          </div>
-          <div class="mini-card">
-            <div class="h">🍽 Food</div>
-            <div class="ring-row">
-              <div class="ring" id="heroRing" style="--c:var(--teal)"><b id="heroPct">0%</b></div>
-              <div><div style="font-weight:900">On track</div><div class="muted" style="font-size:.8rem">+160 kcal exercise</div></div>
-            </div>
-          </div>
-          <div class="mini-card">
-            <div class="h">🏃 Active this week <span style="margin-left:auto">110 / 150</span></div>
-            <div class="bar"><i id="heroBar"></i></div>
-          </div>
-          <div class="mini-card">
-            <div class="h">📋 Logged</div>
-            <div class="log-item" style="margin-top:8px;font-size:.78rem;padding:6px 10px;animation:none"><span class="dot" style="background:var(--teal)"></span>🍳 Home cooked · Regular</div>
-            <div class="log-item" style="margin-top:6px;font-size:.78rem;padding:6px 10px;animation:none"><span class="dot" style="background:var(--amber)"></span>🥗 Cafeteria · Small</div>
-            <div class="log-item" style="margin-top:6px;font-size:.78rem;padding:6px 10px;animation:none"><span class="dot" style="background:var(--orange)"></span>🏃 Walking · 30 min</div>
-          </div>
-          <div class="mini-card">
-            <div class="h">⚖️ Weight <span style="margin-left:auto">−0.8 lb/wk</span></div>
-            <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M0,8 C30,10 50,12 70,16 S110,20 130,25 S170,30 200,33" fill="none" stroke="var(--purple)" stroke-width="3" stroke-linecap="round"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<header>
+  <img src="assets/icon.png" alt="">
+  Lose Weight
+  <a href="https://github.com/ceramic-mug/lose-weight">GitHub</a>
 </header>
 
-<section>
-  <div class="wrap">
-    <div class="grid three">
-      <div class="card reveal">
-        <div class="icon-chip" style="background:color-mix(in srgb,var(--accent) 14%,transparent)">🍽</div>
-        <h3>Three taps a meal</h3>
-        <p class="muted" style="margin-top:6px">Where it came from, how healthy it was, how much. The last tap saves it.</p>
-      </div>
-      <div class="card reveal">
-        <div class="icon-chip" style="background:color-mix(in srgb,var(--orange) 14%,transparent)">🏃</div>
-        <h3>Two taps a workout</h3>
-        <p class="muted" style="margin-top:6px">What you did and for how long. Apple Watch workouts can come in automatically, if you want that.</p>
-      </div>
-      <div class="card reveal">
-        <div class="icon-chip" style="background:color-mix(in srgb,var(--purple) 14%,transparent)">📉</div>
-        <h3>Your real trend</h3>
-        <p class="muted" style="margin-top:6px">Daily weigh-ins are smoothed so water weight doesn't hide your real progress.</p>
-      </div>
-    </div>
-  </div>
-</section>
+<main>
+  <section style="padding-top:24px">
+    <h1>Three taps<br>a meal.</h1>
+    <p class="sub" style="margin-top:18px;font-size:1.15rem">No calorie counting. Try it.</p>
 
-<section id="try">
-  <div class="wrap">
-    <div class="center stack">
-      <p class="eyebrow">Try it</p>
-      <h2>Log your day in seconds.</h2>
-      <p class="lede">Tap through a meal below and watch the budget ring fill up.</p>
-    </div>
+    <p class="q on" id="q1">Where from?</p>
+    <div class="opts" id="cats"></div>
+    <p class="q" id="q2">How healthy?</p>
+    <div class="opts" id="tiers"></div>
+    <p class="q" id="q3">How much?</p>
+    <div class="opts" id="portions"></div>
 
-    <div class="demo">
-      <div class="card">
-        <div class="step active" id="s1">
-          <div class="step-h"><span class="n">1</span>Where from?</div>
-          <div class="tiles" id="cats"></div>
-        </div>
-        <div class="step" id="s2">
-          <div class="step-h"><span class="n">2</span>How healthy?</div>
-          <div class="tiles three" id="tiers"></div>
-        </div>
-        <div class="step" id="s3">
-          <div class="step-h"><span class="n">3</span>How much? <span class="muted" style="font-weight:700">(this tap saves)</span></div>
-          <div class="tiles three" id="portions"></div>
-        </div>
-      </div>
+    <div class="today" aria-live="polite">
+      <div class="big"><span id="pct">0</span>%</div>
+      <p class="sub" id="status">of today's budget</p>
+      <div class="meter"><i id="meter"></i></div>
+      <ol class="log" id="log"></ol>
+      <button class="reset" id="reset" hidden>Start over</button>
+    </div>
+  </section>
 
-      <div class="card budget-panel">
-        <div class="step-h" style="margin:0">Today's budget</div>
-        <div class="ring-row" style="margin-top:14px">
-          <div class="ring" id="ring" style="width:120px;height:120px"><b id="pct">0%</b></div>
-          <div>
-            <div class="status-line" id="statusLine">Nothing yet</div>
-            <div class="muted" id="kcalLine">0 of 1,800 kcal</div>
-          </div>
-        </div>
-        <div class="log" id="log" aria-live="polite"></div>
-        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-          <button class="btn ghost" id="walk" style="padding:10px 16px;font-size:.9rem">🏃 +30 min walk</button>
-          <button class="btn ghost" id="reset" style="padding:10px 16px;font-size:.9rem">↺ Reset</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+  <section>
+    <h2>The scale bounces.<br><em>The trend doesn't.</em></h2>
+    <svg id="chart" role="img" aria-label="Ten weeks of daily weigh-ins with a smoothed trend line heading down"></svg>
+  </section>
 
-<section id="trend" style="background:var(--surface)">
-  <div class="wrap">
-    <div class="center stack">
-      <p class="eyebrow">Weight trend</p>
-      <h2>The scale is noisy.<br>Your trend isn't.</h2>
-      <p class="lede">Weight goes up and down 1–2 lb a day from water and salt. The trend line shows where you're really heading.</p>
-    </div>
-    <div class="card chart-card" style="background:var(--bg)">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-        <div class="toggle" role="group" aria-label="Chart view">
-          <button id="showScale" class="on">Scale only</button>
-          <button id="showTrend">With trend</button>
-        </div>
-        <span class="muted" id="trendRate">10 weeks of weigh-ins</span>
-      </div>
-      <div class="chart-wrap" style="margin-top:14px">
-        <svg class="chart" id="chart" viewBox="0 0 640 260" role="img" aria-label="Daily weigh-ins and the smoothed trend line over ten weeks"></svg>
-      </div>
-      <div class="legend">
-        <span><i style="width:9px;height:9px;border-radius:50%;background:var(--purple);opacity:.35"></i>Daily weigh-in</span>
-        <span><i style="width:16px;height:3px;border-radius:2px;background:var(--purple)"></i>Trend</span>
-        <span><i style="width:16px;border-top:2px dashed var(--ink-3)"></i>Goal</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <div class="center stack">
-      <p class="eyebrow">Weekly report card</p>
-      <h2>See how your week went.</h2>
-      <p class="lede">A simple grade and two or three specific tips. No lectures.</p>
-    </div>
-    <div class="report">
-      <div class="card reveal" id="reportCard">
-        <div class="grade-row">
-          <div class="ring grade-ring" id="gradeRing" style="--c:var(--teal)"><b>B</b></div>
-          <div>
-            <h3>This week</h3>
-            <p class="muted">Score 78 of 100</p>
-          </div>
-        </div>
-        <div class="score-bars">
-          <div class="row"><span>Food quality</span><span class="track"><i data-w="80" style="background:var(--teal)"></i></span><span>32</span></div>
-          <div class="row"><span>Near budget</span><span class="track"><i data-w="85" style="background:var(--accent)"></i></span><span>17</span></div>
-          <div class="row"><span>Movement</span><span class="track"><i data-w="73" style="background:var(--orange)"></i></span><span>22</span></div>
-          <div class="row"><span>Logging</span><span class="track"><i data-w="70" style="background:var(--purple)"></i></span><span>7</span></div>
-        </div>
-      </div>
-      <div class="card reveal">
-        <h3 style="margin-bottom:14px">Focus</h3>
-        <div class="tip" style="--c:var(--accent)"><span class="e">🍳</span><div><b>Swap two takeout meals a week</b><span>6 of 21 meals were takeout. Cooking 2 at home saves ≈550 kcal a week.</span></div></div>
-        <div class="tip" style="--c:var(--accent)"><span class="e">🚶</span><div><b>40 more active minutes a week</b><span>≈10 min on 5 days. A brisk walk counts.</span></div></div>
-        <div class="tip" style="--c:var(--teal)"><span class="e">📅</span><div><b>Tuesdays are your best day</b><span>Your healthiest choices. Borrow that routine.</span></div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="science" style="background:var(--surface)">
-  <div class="wrap">
-    <div class="center stack">
-      <p class="eyebrow">Built on the science</p>
-      <h2>Simple on the surface,<br>guideline-based underneath.</h2>
-      <p class="lede">The math behind every number follows published medical and dietetics guidelines.</p>
-    </div>
-    <div class="guides">
-      <div class="card guide reveal" style="background:var(--bg)"><span class="num">1–2 lb</span><div><b>A safe pace each week</b><small>CDC · NIH</small><p class="muted" style="margin-top:6px">You pick gentle, steady or brisk. All three are within the safe range.</p></div></div>
-      <div class="card guide reveal" style="background:var(--bg)"><span class="num">1,200</span><div><b>Never too low</b><small>NHLBI · AHA/ACC/TOS</small><p class="muted" style="margin-top:6px">Your daily budget never drops below a safe minimum: 1,200 kcal for women, 1,500 for men.</p></div></div>
-      <div class="card guide reveal" style="background:var(--bg)"><span class="num">150</span><div><b>Active minutes a week</b><small>HHS Physical Activity Guidelines</small><p class="muted" style="margin-top:6px">Hard effort counts double, plus strength training twice a week.</p></div></div>
-      <div class="card guide reveal" style="background:var(--bg)"><span class="num">½</span><div><b>Half the plate veg</b><small>USDA MyPlate · Harvard Healthy Eating Plate</small><p class="muted" style="margin-top:6px">The three healthiness levels (lighter, balanced, indulgent) are based on these plate guides.</p></div></div>
-      <div class="card guide reveal" style="background:var(--bg)"><span class="num">5–10%</span><div><b>A first goal that matters</b><small>NIH · NIDDK</small><p class="muted" style="margin-top:6px">Losing this much improves blood pressure, blood sugar and cholesterol.</p></div></div>
-      <div class="card guide reveal" style="background:var(--bg)"><span class="num">MET</span><div><b>Honest exercise calories</b><small>Compendium of Physical Activities</small><p class="muted" style="margin-top:6px">Only the calories burned beyond resting are added back to your budget, so nothing is counted twice.</p></div></div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <div class="center stack">
-      <p class="eyebrow">iPhone + Mac</p>
-      <h2>Log on your phone.<br>Review on your Mac.</h2>
-      <p class="lede">One native app that syncs privately through your own iCloud. No accounts, servers or ads.</p>
-    </div>
-    <div class="devices" aria-hidden="true">
-      <div class="mac">
-        <div class="lid"><div class="screen">
-          <div class="side"><span class="on">☀️ Today</span><span>📈 Trends</span><span>✅ Insights</span><span>⚙️ Settings</span></div>
-          <div class="main">
-            <div class="mini-card"><div class="h">🍽 Food</div><div class="ring" style="--p:72;--c:var(--teal);width:56px;height:56px;margin-top:6px"><b style="font-size:.75rem">72%</b></div></div>
-            <div class="mini-card"><div class="h">🏃 Active</div><div class="bar"><i style="width:73%"></i></div><div class="muted" style="font-size:.7rem;margin-top:6px">110 / 150 min</div></div>
-            <div class="mini-card" style="grid-column:span 2"><div class="h">⚖️ Weight</div>
-              <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none"><path d="M0,8 C30,10 50,12 70,16 S110,20 130,25 S170,30 200,33" fill="none" stroke="var(--purple)" stroke-width="2.5" stroke-linecap="round"/></svg>
-            </div>
-          </div>
-        </div></div>
-        <div class="base"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section style="padding-top:24px">
-  <div class="wrap" style="max-width:760px">
-    <h2 class="center" style="margin-bottom:28px">Questions</h2>
-    <details><summary>Do I have to count calories?</summary><p>No. You tap where the food came from, how healthy it was, and how much. The app estimates a calorie range in the background. Calorie numbers are hidden unless you turn them on.</p></details>
-    <details><summary>Do I need an Apple Watch?</summary><p>No. The app is built for manual entry. If you have a Watch or a smart scale, you can turn on Apple Health import in Settings.</p></details>
-    <details><summary>How accurate are the food estimates?</summary><p>They're honest ranges, not exact counts. The goal is to spot patterns, like how often you eat takeout, how big your portions are, and how many indulgent meals you have. That's where most of the gains are.</p></details>
-    <details><summary>Is it safe for everyone?</summary><p>It's designed for adults. If you're pregnant, breastfeeding, or have a history of an eating disorder, the app sets your budget to maintenance (no calorie cut) and suggests working with a clinician. It isn't medical advice.</p></details>
-    <details><summary>Where's my data stored?</summary><p>On your devices, synced privately through your own iCloud account. You can export everything as a CSV at any time.</p></details>
-  </div>
-</section>
+  <section>
+    <h2>Sensible by default.</h2>
+    <dl>
+      <dt>1–2 lb</dt><dd>a week at most, per CDC guidance.</dd>
+      <dt>1,200</dt><dd>calories a day is the lowest budget it will ever set.</dd>
+      <dt>150</dt><dd>active minutes a week. Logging a walk takes two taps.</dd>
+      <dt>0</dt><dd>accounts, ads, or servers. Your data stays in your iCloud.</dd>
+    </dl>
+  </section>
+</main>
 
 <footer>
-  <div class="wrap">
-    <span>© Lose Weight · General guidance, not medical advice.</span>
-    <span><a href="https://github.com/ceramic-mug/lose-weight">Source on GitHub</a> · <a href="https://github.com/ceramic-mug/lose-weight/blob/main/docs/GUIDELINES.md">How the numbers work</a></span>
-  </div>
+  <span>For iPhone and Mac.</span>
+  <span>Not medical advice.</span>
+  <a href="https://github.com/ceramic-mug/lose-weight/blob/main/docs/GUIDELINES.md">How the numbers work</a>
 </footer>
-
-<div class="toast" id="toast" role="status"></div>
 
 <script>
 (() => {
   const BUDGET = 1800;
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // Same ranges as the app's LoseWeightCore (regular portion, kcal).
+  // Same ranges as the app (regular portion, kcal).
   const CATS = [
-    { id: 'home', name: 'Home cooked', e: '🍳', r: [[350,500],[500,700],[700,1000]] },
-    { id: 'fast', name: 'Fast food',   e: '🍔', r: [[400,600],[650,900],[1000,1400]] },
-    { id: 'rest', name: 'Restaurant',  e: '🍝', r: [[450,650],[750,1050],[1100,1600]] },
-    { id: 'caf',  name: 'Cafeteria',   e: '🥗', r: [[350,550],[550,800],[800,1100]] },
-    { id: 'pack', name: 'Packaged',    e: '📦', r: [[250,400],[400,600],[600,900]] },
-    { id: 'snack',name: 'Snack',       e: '🍎', r: [[80,150],[150,300],[300,500]] },
-    { id: 'drink',name: 'Drink',       e: '🥤', r: [[0,50],[80,180],[200,450]] },
+    ['Home cooked', [[350,500],[500,700],[700,1000]]],
+    ['Fast food',   [[400,600],[650,900],[1000,1400]]],
+    ['Restaurant',  [[450,650],[750,1050],[1100,1600]]],
+    ['Cafeteria',   [[350,550],[550,800],[800,1100]]],
+    ['Packaged',    [[250,400],[400,600],[600,900]]],
+    ['Snack',       [[80,150],[150,300],[300,500]]],
+    ['Drink',       [[0,50],[80,180],[200,450]]],
   ];
-  const TIERS = [
-    { name: 'Lighter', e: '🌿', c: 'var(--teal)' },
-    { name: 'Balanced', e: '◐', c: 'var(--amber)' },
-    { name: 'Indulgent', e: '🔥', c: 'var(--rose)' },
-  ];
-  const PORTIONS = [
-    { name: 'Small', e: '◔', m: 0.6 },
-    { name: 'Regular', e: '●', m: 1.0 },
-    { name: 'Large', e: '⊕', m: 1.5 },
-  ];
+  const TIERS = [['Lighter', 'var(--teal)'], ['Balanced', 'var(--amber)'], ['Indulgent', 'var(--rose)']];
+  const PORTIONS = [['Small', .6], ['Regular', 1], ['Large', 1.5]];
+  const $ = s => document.querySelector(s);
+  let cat = null, tier = null, eaten = 0;
 
-  const $ = (s) => document.querySelector(s);
-  const state = { cat: null, tier: null, eaten: 0, bonus: 0 };
-
-  function tile(label, e, onClick, color) {
-    const b = document.createElement('button');
-    b.className = 'tile';
-    b.type = 'button';
-    b.innerHTML = `<span class="e" aria-hidden="true">${e}</span>${label}`;
-    b.addEventListener('click', onClick);
-    if (color) b.dataset.color = color;
-    return b;
+  function buttons(el, items, label, onPick) {
+    items.forEach((it, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.innerHTML = label(it);
+      b.onclick = () => onPick(i);
+      el.appendChild(b);
+    });
   }
-
-  function select(container, idx, color) {
-    [...container.children].forEach((t, i) => {
-      t.classList.toggle('sel', i === idx);
-      t.style.background = i === idx ? (color || t.dataset.color || 'var(--accent)') : '';
+  const mark = (el, i) => [...el.children].forEach((b, k) => b.classList.toggle('sel', k === i));
+  const groups = { 1: '#cats', 2: '#tiers', 3: '#portions' };
+  function step(n) {
+    [1, 2, 3].forEach(k => {
+      $('#q' + k).classList.toggle('on', k <= n);
+      [...$(groups[k]).children].forEach(b => b.disabled = k > n);
     });
   }
 
-  function setStep(n) {
-    [1, 2, 3].forEach(i => {
-      const s = $('#s' + i);
-      s.classList.toggle('active', i === n);
-      s.classList.toggle('done', i < n);
-      s.querySelectorAll('.tile').forEach(t => t.disabled = i > n);
-    });
-  }
-
-  const cats = $('#cats'), tiers = $('#tiers'), portions = $('#portions');
-  CATS.forEach((c, i) => cats.appendChild(tile(c.name, c.e, () => {
-    state.cat = i; select(cats, i, 'var(--accent)'); setStep(2);
-    select(tiers, -1); state.tier = null;
-  })));
-  TIERS.forEach((t, i) => tiers.appendChild(tile(t.name, t.e, () => {
-    state.tier = i; select(tiers, i, t.c); setStep(3);
-  }, t.c)));
-  PORTIONS.forEach((p, i) => portions.appendChild(tile(p.name, p.e, () => save(i))));
-  setStep(1);
+  buttons($('#cats'), CATS, c => c[0], i => { cat = i; tier = null; mark($('#cats'), i); mark($('#tiers'), -1); step(2); });
+  buttons($('#tiers'), TIERS, t => `<span class="d" style="background:${t[1]}"></span>${t[0]}`, i => { tier = i; mark($('#tiers'), i); step(3); });
+  buttons($('#portions'), PORTIONS, p => p[0], i => save(i));
+  step(1);
 
   function save(pi) {
-    const c = CATS[state.cat], t = TIERS[state.tier], p = PORTIONS[pi];
-    const [lo, hi] = c.r[state.tier];
-    const kcal = Math.round(((lo + hi) / 2) * p.m / 10) * 10;
-    state.eaten += kcal;
-    addLog(`<span class="dot" style="background:${t.c}"></span>${c.e} ${c.name} · ${p.name}<span class="k">${kcal.toLocaleString()} kcal</span>`);
-    toast('Saved ✓ (3 taps)');
-    state.cat = state.tier = null;
-    select(cats, -1); select(tiers, -1); setStep(1);
-    update();
-    if (navigator.vibrate) navigator.vibrate(12);
+    const [name, ranges] = CATS[cat], [lo, hi] = ranges[tier];
+    const kcal = Math.round((lo + hi) / 2 * PORTIONS[pi][1] / 10) * 10;
+    eaten += kcal;
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="d" style="background:${TIERS[tier][1]}"></span><span>${name}, ${PORTIONS[pi][0].toLowerCase()}</span><span>${kcal.toLocaleString()}</span>`;
+    $('#log').prepend(li);
+    cat = tier = null; mark($('#cats'), -1); mark($('#tiers'), -1); step(1);
+    render();
+    if (navigator.vibrate) navigator.vibrate(10);
   }
 
-  function addLog(html) {
-    const d = document.createElement('div');
-    d.className = 'log-item';
-    d.innerHTML = html;
-    $('#log').prepend(d);
-    while ($('#log').children.length > 5) $('#log').lastChild.remove();
+  function render() {
+    const f = eaten / BUDGET;
+    $('#pct').textContent = Math.round(f * 100);
+    $('#meter').style.width = Math.min(100, f * 100) + '%';
+    $('#meter').style.background = f > 1.1 ? 'var(--rose)' : 'var(--teal)';
+    $('#status').textContent = eaten === 0 ? "of today's budget"
+      : f > 1.1 ? 'over budget. A walk helps.' : f >= .9 ? 'on track.' : "of today's budget";
+    $('#reset').hidden = eaten === 0;
   }
+  $('#reset').onclick = () => { eaten = 0; $('#log').innerHTML = ''; render(); };
 
-  function update() {
-    const budget = BUDGET + state.bonus;
-    const f = state.eaten / budget;
-    const ring = $('#ring');
-    const color = f > 1.1 ? 'var(--rose)' : f >= 0.9 ? 'var(--teal)' : 'var(--accent)';
-    ring.style.setProperty('--c', color);
-    ring.style.setProperty('--p', Math.min(100, f * 100));
-    $('#pct').textContent = Math.round(f * 100) + '%';
-    $('#statusLine').textContent = state.eaten === 0 ? 'Nothing yet' : f > 1.1 ? 'Over budget' : f >= 0.9 ? 'On track' : 'Room to spare';
-    $('#kcalLine').textContent = `${state.eaten.toLocaleString()} of ${budget.toLocaleString()} kcal` + (state.bonus ? ` (+${state.bonus} exercise)` : '');
-  }
-
-  $('#walk').addEventListener('click', () => {
-    // Brisk walk: (5.0 − 1) MET × 80 kg × 0.5 h = 160 kcal
-    state.bonus += 160;
-    addLog(`<span class="dot" style="background:var(--orange)"></span>🏃 Walking · 30 min<span class="k">+160 kcal</span>`);
-    toast('Saved ✓ (2 taps)');
-    update();
-  });
-  $('#reset').addEventListener('click', () => {
-    state.eaten = 0; state.bonus = 0; $('#log').innerHTML = ''; update();
-  });
-
-  let toastTimer;
-  function toast(msg) {
-    const t = $('#toast');
-    t.textContent = msg; t.classList.add('show');
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1400);
-  }
-
-  // Trend chart: seeded noisy weigh-ins + the app's moving-average trend (α = 0.1)
+  // Chart: noisy weigh-ins and the app's smoothed trend (10% moving average).
   let seed = 7;
-  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const days = 70, data = [];
-  let trend = null;
+  const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+  const days = 70, pts = [];
+  let t = null;
   for (let i = 0; i < days; i++) {
-    const real = 190 - i * 0.11;
-    const scale = real + (rand() - 0.5) * 3.2 + (i % 7 === 5 ? 1.2 : 0);
-    if (rand() < 0.12) continue;
-    trend = trend === null ? scale : trend + 0.1 * (scale - trend);
-    data.push({ i, scale, trend });
+    const v = 190 - i * .11 + (rnd() - .5) * 3.2 + (i % 7 === 5 ? 1.2 : 0);
+    if (rnd() < .12) continue;
+    t = t === null ? v : t + .1 * (v - t);
+    pts.push([i, v, t]);
   }
   const svg = $('#chart');
-  // Draw at the real on-screen width so labels stay readable on phones.
-  const W = Math.max(300, Math.round(svg.parentElement.clientWidth) || 640);
-  const H = W < 500 ? 230 : 260, P = { l: 36, r: 8, t: 10, b: 26 };
+  const W = Math.max(300, Math.round(svg.parentElement.clientWidth)), H = W < 500 ? 220 : 260, L = 30, B = 22;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  const goal = 180;
-  const ys = data.flatMap(d => [d.scale, d.trend]).concat(goal);
-  const yMin = Math.floor(Math.min(...ys) - 1), yMax = Math.ceil(Math.max(...ys) + 1);
-  const x = i => P.l + (i / (days - 1)) * (W - P.l - P.r);
-  const y = v => P.t + (1 - (v - yMin) / (yMax - yMin)) * (H - P.t - P.b);
-  let g = '';
-  for (let v = Math.ceil(yMin / 4) * 4; v <= yMax; v += 4) {
-    g += `<line class="grid-line" x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}"/><text class="axis-label" x="${P.l - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
-  }
-  (W < 500 ? [0, 3, 6, 9] : [0, 2, 4, 6, 8]).forEach(w => g += `<text class="axis-label" x="${x(w * 7)}" y="${H - 6}" text-anchor="middle">wk ${w + 1}</text>`);
-  g += `<line class="goal" x1="${P.l}" x2="${W - P.r}" y1="${y(goal)}" y2="${y(goal)}"/><text class="axis-label" x="${W - P.r}" y="${y(goal) - 6}" text-anchor="end">Goal</text>`;
-  g += data.map(d => `<circle class="dot" cx="${x(d.i)}" cy="${y(d.scale)}" r="4"><title>Day ${d.i + 1}: ${d.scale.toFixed(1)} lb</title></circle>`).join('');
-  const path = data.map((d, k) => `${k ? 'L' : 'M'}${x(d.i).toFixed(1)},${y(d.trend).toFixed(1)}`).join(' ');
-  g += `<path class="trend" id="trendPath" d="${path}"/>`;
-  svg.innerHTML = g;
-  const tp = $('#trendPath'), len = tp.getTotalLength();
-  tp.style.strokeDasharray = len; tp.style.strokeDashoffset = len;
-  const rate = ((data.at(-1).trend - data[data.length - 22].trend) / 3).toFixed(1);
-
-  function showTrend(on) {
-    $('#showTrend').classList.toggle('on', on);
-    $('#showScale').classList.toggle('on', !on);
-    tp.style.strokeDashoffset = on ? 0 : len;
-    svg.querySelectorAll('.dot').forEach(c => c.style.opacity = on ? .25 : .55);
-    $('#trendRate').textContent = on ? `Trend: ${rate} lb / week` : '10 weeks of weigh-ins';
-  }
-  $('#showTrend').addEventListener('click', () => showTrend(true));
-  $('#showScale').addEventListener('click', () => showTrend(false));
-  svg.querySelectorAll('.dot').forEach(c => c.style.opacity = .55);
-
-  // Reveal on scroll + animate things once
-  const io = new IntersectionObserver(entries => entries.forEach(e => {
-    if (!e.isIntersecting) return;
-    e.target.classList.add('in');
-    if (e.target.id === 'reportCard') {
-      $('#gradeRing').style.setProperty('--p', 78);
-      e.target.querySelectorAll('.track i').forEach(i => i.style.width = i.dataset.w + '%');
-    }
-    if (e.target.id === 'chart' && !reduce) setTimeout(() => showTrend(true), 900);
-    io.unobserve(e.target);
-  }), { threshold: 0.25 });
-  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-  io.observe(svg);
-
-  // Hero phone comes alive
-  requestAnimationFrame(() => setTimeout(() => {
-    $('#heroRing').style.setProperty('--p', 72);
-    $('#heroBar').style.width = '73%';
-    let n = 0; const target = 72;
-    const tick = () => { n = Math.min(target, n + 3); $('#heroPct').textContent = n + '%'; if (n < target) requestAnimationFrame(tick); };
-    reduce ? ($('#heroPct').textContent = target + '%') : tick();
-  }, 300));
+  const all = pts.flatMap(p => [p[1], p[2]]);
+  const lo = Math.floor(Math.min(...all)) - 1, hi = Math.ceil(Math.max(...all)) + 1;
+  const x = i => L + i / (days - 1) * (W - L - 4);
+  const y = v => 6 + (1 - (v - lo) / (hi - lo)) * (H - 6 - B);
+  let s = '';
+  for (let v = Math.ceil(lo / 4) * 4; v <= hi; v += 4)
+    s += `<line class="gl" x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text class="lbl" x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+  s += `<text class="lbl" x="${L}" y="${H - 4}">Week 1</text><text class="lbl" x="${W}" y="${H - 4}" text-anchor="end">Week 10</text>`;
+  s += pts.map(p => `<circle class="pt" cx="${x(p[0])}" cy="${y(p[1])}" r="3.5"/>`).join('');
+  s += `<path class="tr" id="tr" d="${pts.map((p, k) => (k ? 'L' : 'M') + x(p[0]).toFixed(1) + ',' + y(p[2]).toFixed(1)).join(' ')}"/>`;
+  svg.innerHTML = s;
+  const tr = $('#tr'), len = tr.getTotalLength();
+  tr.style.strokeDasharray = len; tr.style.strokeDashoffset = len;
+  new IntersectionObserver((es, o) => es.forEach(e => {
+    if (e.isIntersecting) { tr.style.strokeDashoffset = 0; o.disconnect(); }
+  }), { threshold: .4 }).observe(svg);
 })();
 </script>
 </body>
