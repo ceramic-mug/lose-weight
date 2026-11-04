@@ -1,0 +1,67 @@
+# Generate the Xcode project with:  brew install xcodegen && xcodegen
+name: LoseWeight
+
+options:
+  bundleIdPrefix: com.example
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "18.0"
+    macOS: "15.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Set your Apple Developer team ID here (or in Xcode › Signing & Capabilities).
+    DEVELOPMENT_TEAM: ""
+
+packages:
+  LoseWeightCore:
+    path: Packages/LoseWeightCore
+
+targets:
+  LoseWeight:
+    type: application
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: App
+    dependencies:
+      - package: LoseWeightCore
+    info:
+      path: Config/Info.plist
+      properties:
+        CFBundleDisplayName: Lose Weight
+        LSApplicationCategoryType: public.app-category.healthcare-fitness
+        NSHealthShareUsageDescription: Lose Weight reads your workouts and weigh-ins so you don't have to enter them twice.
+        NSHealthUpdateUsageDescription: Lose Weight saves the weights you log to Apple Health.
+        UILaunchScreen: {}
+        UIBackgroundModes: [remote-notification]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.loseweight
+        PRODUCT_NAME: LoseWeight
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]": Config/LoseWeight-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": Config/LoseWeight-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Config/LoseWeight-macOS.entitlements
+        "ENABLE_HARDENED_RUNTIME[sdk=macosx*]": YES
+
+schemes:
+  LoseWeight:
+    build:
+      targets:
+        LoseWeight: all
+    test:
+      targets:
+        - package: LoseWeightCore/LoseWeightCoreTests
