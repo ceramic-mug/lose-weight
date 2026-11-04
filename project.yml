@@ -2,7 +2,7 @@
 name: LoseWeight
 
 options:
-  bundleIdPrefix: com.example
+  bundleIdPrefix: com.ceramicmug
   createIntermediateGroups: true
   deploymentTarget:
     iOS: "18.0"
@@ -46,7 +46,7 @@ targets:
           - UIInterfaceOrientationLandscapeRight
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.loseweight
+        PRODUCT_BUNDLE_IDENTIFIER: com.ceramicmug.loseweight
         PRODUCT_NAME: LoseWeight
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

@@ -1,67 +1,33 @@
 # Testing on your iPhone with TestFlight
 
-You can do all of this from a phone browser. No Mac needed.
+The **TestFlight** workflow builds the app on a cloud Mac and uploads it to TestFlight. It also handles Apple setup:
+- It registers the app ID (default `com.ceramicmug.loseweight`) and turns on HealthKit.
+- It finds your Team ID.
+- It signs the app.
 
-## One-time setup
+## You need these GitHub secrets
+Add them under **Settings › Secrets and variables › Actions** on the GitHub website.
 
-### 1. Join the Apple Developer Program
-At **developer.apple.com/programs**, enroll ($99/year). Approval can take up to 48 hours.
-
-### 2. Register the app ID
-On developer.apple.com, go to **Account › Certificates, IDs & Profiles › Identifiers › +**, then:
-1. Choose **App IDs › App**.
-2. **Bundle ID (explicit):** for example `com.yourname.loseweight`.
-3. **Capabilities:** tick **HealthKit**, **iCloud** (choose *Include CloudKit support*) and **Push Notifications**.
-4. Save. Then open **Identifiers**, switch the filter to **iCloud Containers**, tap **+** and create `iCloud.com.yourname.loseweight` (use your bundle ID after `iCloud.`).
-5. Go back to your App ID and, under **iCloud › Edit**, select that container.
-
-### 3. Create the app in App Store Connect
-At **appstoreconnect.apple.com**, go to **Apps › + › New App**:
-- **Platform:** iOS
-- **Name:** anything unique, for example "Lose Weight – Yourname"
-- **Bundle ID:** the one from step 2
-- **SKU:** anything, for example `loseweight`
-
-### 4. Create an API key
-In App Store Connect, go to **Users and Access › Integrations › App Store Connect API › Team Keys › +**:
-1. **Access:** Admin. Admin is needed so the build can create its own signing certificate.
-2. Note the **Key ID** and the **Issuer ID** shown above the list.
-3. **Download** the key. It's a `.p8` file and can only be downloaded once.
-
-To copy the key's text on an iPhone:
-1. In the Files app, rename `AuthKey_XXXX.p8` to `AuthKey_XXXX.txt`.
-2. Open it, select all and copy.
-
-You can delete the file afterwards.
-
-### 5. Find your Team ID
-On developer.apple.com, it's under **Account › Membership details**. It's 10 characters long.
-
-### 6. Add secrets to GitHub
-On github.com (in the browser, not the app), open the repo and go to **Settings › Secrets and variables › Actions › New repository secret**. Add:
-
-| Name | Value |
+| Secret | Where to get it |
 |---|---|
-| `BUNDLE_ID` | your bundle ID, for example `com.yourname.loseweight` |
-| `APPLE_TEAM_ID` | your Team ID |
-| `ASC_KEY_ID` | the Key ID |
-| `ASC_ISSUER_ID` | the Issuer ID |
-| `ASC_KEY_P8` | the full key text, including the `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` lines |
+| `ASC_KEY_ID` | App Store Connect › Users and Access › Integrations › Team Keys. Create the key with **Admin** access. |
+| `ASC_ISSUER_ID` | Shown above that key list |
+| `ASC_KEY_P8` | Full text of the downloaded `.p8` file, including the BEGIN/END lines |
+| `BUNDLE_ID` *(optional)* | Overrides `com.ceramicmug.loseweight` |
+| `APPLE_TEAM_ID` *(optional)* | Found automatically if you leave it out |
 
-## Each time you want a new build
+## Steps
+1. In the GitHub app or on the website, go to **Actions › TestFlight › Run workflow**.
+2. **First run only:** the run stops at **Apple setup** and asks you to create the app.
+   1. In App Store Connect, go to **Apps › + › New App**.
+   2. **Platform:** iOS. **Bundle ID:** the one the message names. **Name:** anything unique. **SKU:** anything.
+   3. Run the workflow again.
+3. When the run is green, open **TestFlight** in App Store Connect. The first time, add yourself to an **Internal Testing** group.
+4. Install the **TestFlight** app on your iPhone and install Lose Weight from it. Later builds update automatically.
 
-1. In the GitHub app or on the website, open the repo and go to **Actions › TestFlight › Run workflow**. It takes about 10–15 minutes.
-2. In App Store Connect, open **TestFlight**. The build shows up after Apple finishes processing it, usually 5–30 minutes later.
-3. The first time only:
-   1. Create an **Internal Testing** group and add yourself.
-   2. Answer the export-compliance question if it's asked. The app doesn't use encryption beyond what iOS provides.
-4. Install the **TestFlight** app from the App Store, then install Lose Weight from it. New builds then arrive automatically.
+TestFlight builds store data on the phone only. iCloud sync between iPhone and Mac is off until an iCloud container is set up.
 
-The **Run workflow** button only appears once the workflow file is on the repo's default branch (`main`).
-
-## If something fails
-
-Open the failed run in **Actions** and look at the step that went red:
-- **Check secrets:** one of the secrets above is missing.
-- **Archive:** usually a signing problem. Check that the bundle ID, capabilities and iCloud container match step 2.
-- **Upload to TestFlight:** the app record from step 3 doesn't exist, or the API key's role isn't Admin.
+## If a step fails
+- **Check secrets:** a secret is missing or misnamed.
+- **Apple setup:** the message says what to fix. Usually it's the key's role (it must be Admin) or a missing app record.
+- **Archive or Upload:** a signing or App Store Connect problem. Share the run link and Claude can read the log.

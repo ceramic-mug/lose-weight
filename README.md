@@ -37,7 +37,9 @@ open LoseWeight.xcodeproj
 ```
 
 1. In **Signing & Capabilities**, choose your team.
-2. Change the bundle ID `com.example.loseweight` and the iCloud container `iCloud.com.example.loseweight` to your own, in `project.yml` and both files in `Config/`.
+2. The bundle ID is `com.ceramicmug.loseweight`. To use your own, change it in `project.yml` and the files in `Config/`.
+
+To test on an iPhone without a Mac, see [docs/TESTFLIGHT.md](docs/TESTFLIGHT.md).
 3. Run on an iPhone simulator or on **My Mac**.
 
 Apple Health only works on a real iPhone or iPad. In the simulator and on the Mac, the app runs without it, and the Mac gets Health-imported data through iCloud.
