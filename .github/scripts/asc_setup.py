@@ -52,7 +52,10 @@ def api(method: str, path: str, body: dict | None = None) -> dict:
         if e.code == 401:
             fail("App Store Connect rejected the API key. Check ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_P8.")
         if e.code == 403:
-            fail("The API key doesn't have permission. Create it with the Admin role.")
+            if "AGREEMENT" in detail.upper():
+                fail("Apple needs you to accept an updated agreement: App Store Connect › Business (and "
+                     f"developer.apple.com › Account). Then run again. Apple said: {detail}")
+            fail(f"The API key doesn't have permission. It must be a Team Key with the Admin role. Apple said: {detail}")
         fail(f"App Store Connect API {method} {path} failed ({e.code}): {detail}")
     return {}
 
