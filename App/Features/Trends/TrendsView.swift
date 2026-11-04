@@ -83,6 +83,7 @@ struct TrendsView: View {
         }
         .background(Theme.pageBackground)
         .navigationTitle("Trends")
+        .toolbar { ToolbarItem(placement: .primaryAction) { ExplainButton(topic: .trend) } }
     }
 }
 
@@ -104,9 +105,9 @@ struct WeightTrendChart: View {
 
         VStack(alignment: .leading, spacing: 12) {
             CardHeader(title: "Weight", systemImage: "scalemass", tint: Theme.weight,
-                       trailing: snapshot.kgPerWeek.map { "\(units.formatWeightChange($0)) / week" })
+                       trailing: snapshot.kgPerWeek.map { "\(units.formatWeightChange($0))/wk" })
             if points.count < 2 {
-                EmptyHint(text: "Log your weight a few days in a row to see your trend.", systemImage: "scalemass")
+                EmptyHint(text: "Not enough weigh-ins yet", systemImage: "scalemass")
                     .frame(height: 200)
             } else {
                 Chart {
@@ -126,7 +127,7 @@ struct WeightTrendChart: View {
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                         .foregroundStyle(.secondary)
                         .annotation(position: .top, alignment: .leading) {
-                            Text("Goal \(units.formatWeight(snapshot.profile.goalWeightKg, decimals: 0))")
+                            Text("Goal")
                                 .font(.caption2).foregroundStyle(.secondary)
                         }
                     if let p = selectedPoint {
@@ -146,11 +147,11 @@ struct WeightTrendChart: View {
                 .frame(height: 220)
 
                 HStack(spacing: 16) {
-                    LegendSwatch(label: "Daily weigh-in", color: Theme.weight.opacity(0.35), shape: .dot)
+                    LegendSwatch(label: "Scale", color: Theme.weight.opacity(0.35), shape: .dot)
                     LegendSwatch(label: "Trend", color: Theme.weight, shape: .line)
                     Spacer()
                     if let date = snapshot.projectedGoalDate {
-                        Text("Goal by \(date.formatted(.dateTime.month(.abbreviated).day().year()))")
+                        Text("Goal ≈ \(date.formatted(.dateTime.month(.abbreviated).year()))")
                             .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
                     }
@@ -179,9 +180,9 @@ struct EatingQualityChart: View {
         let healthy = foods.filter { $0.healthiness != .indulgent }.count
         VStack(alignment: .leading, spacing: 12) {
             CardHeader(title: "Food choices", systemImage: "leaf", tint: Theme.lighter,
-                       trailing: foods.isEmpty ? nil : "\(Format.percent(Double(healthy) / Double(foods.count))) lighter or balanced")
+                       trailing: foods.isEmpty ? nil : "\(Format.percent(Double(healthy) / Double(foods.count))) healthy")
             if foods.isEmpty {
-                EmptyHint(text: "Log meals to see how your choices add up.").frame(height: 180)
+                EmptyHint(text: "No meals yet").frame(height: 180)
             } else {
                 Chart(buckets) { b in
                     BarMark(x: .value("Date", b.start, unit: range.bucket),
@@ -239,10 +240,10 @@ struct BudgetChart: View {
         let onTrack = data.filter { $0.fraction <= 1.1 }.count
 
         VStack(alignment: .leading, spacing: 12) {
-            CardHeader(title: "Daily food budget", systemImage: "chart.bar", tint: Theme.food,
-                       trailing: data.isEmpty ? nil : "\(onTrack) of \(data.count) days on budget")
+            CardHeader(title: "Budget", systemImage: "chart.bar", tint: Theme.food,
+                       trailing: data.isEmpty ? nil : "\(onTrack)/\(data.count) days")
             if data.isEmpty {
-                EmptyHint(text: "Each logged day shows how close you came to your budget.").frame(height: 180)
+                EmptyHint(text: "No meals yet").frame(height: 180)
             } else {
                 Chart {
                     ForEach(data) { d in
@@ -262,8 +263,8 @@ struct BudgetChart: View {
                 }
                 .frame(height: 200)
                 HStack(spacing: 16) {
-                    LegendSwatch(label: "Within budget", color: Theme.food, shape: .square)
-                    LegendSwatch(label: "Over by 10%+", color: Theme.indulgent, shape: .square)
+                    LegendSwatch(label: "On budget", color: Theme.food, shape: .square)
+                    LegendSwatch(label: "Over", color: Theme.indulgent, shape: .square)
                 }
             }
         }
@@ -293,9 +294,9 @@ struct CategoryMixChart: View {
         }
 
         return VStack(alignment: .leading, spacing: 12) {
-            CardHeader(title: "Where your food came from", systemImage: "fork.knife", tint: Theme.food)
+            CardHeader(title: "Food sources", systemImage: "fork.knife", tint: Theme.food)
             if rows.isEmpty {
-                EmptyHint(text: "Your mix of home cooking, takeout and more will show here.").frame(height: 160)
+                EmptyHint(text: "No meals yet").frame(height: 160)
             } else {
                 Chart(rows) { r in
                     BarMark(x: .value("Items", r.count), y: .value("Category", r.category.displayName))
@@ -343,8 +344,8 @@ struct ActiveMinutesChart: View {
         let selectedWeek = selected.flatMap { d in weeks.last { $0.start <= d } }
 
         VStack(alignment: .leading, spacing: 12) {
-            CardHeader(title: "Active minutes per week", systemImage: "figure.run", tint: Theme.exercise,
-                       trailing: "\(met) of \(weeks.count) weeks at 150+")
+            CardHeader(title: "Active minutes", systemImage: "figure.run", tint: Theme.exercise,
+                       trailing: "\(met)/\(weeks.count) wks at 150")
             Chart {
                 ForEach(weeks) { w in
                     BarMark(x: .value("Week", w.start, unit: .weekOfYear), y: .value("Minutes", w.minutes))
@@ -355,23 +356,20 @@ struct ActiveMinutesChart: View {
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                     .foregroundStyle(.secondary)
                     .annotation(position: .top, alignment: .leading) {
-                        Text("150 min guideline").font(.caption2).foregroundStyle(.secondary)
+                        Text("150").font(.caption2).foregroundStyle(.secondary)
                     }
                 if let w = selectedWeek {
                     RuleMark(x: .value("Week", w.start, unit: .weekOfYear))
                         .foregroundStyle(.clear)
                         .annotation(position: .top, overflowResolution: .init(x: .fit, y: .disabled)) {
                             ChartTooltip(title: "Week of \(w.start.formatted(.dateTime.month().day()))",
-                                         lines: ["\(Int(w.minutes)) active minutes"])
+                                         lines: ["\(Int(w.minutes)) min"])
                         }
                 }
             }
             .chartXSelection(value: $selected)
             .chartYAxis { AxisMarks(position: .leading) { _ in AxisGridLine().foregroundStyle(.secondary.opacity(0.2)); AxisValueLabel() } }
             .frame(height: 200)
-            Text("Moderate effort counts once, hard effort counts double — per the Physical Activity Guidelines for Americans.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
         .card()
     }
@@ -407,8 +405,8 @@ struct ActivityHeatmap: View {
         let activeDays = cells.filter { $0.minutes > 0 }.count
 
         return VStack(alignment: .leading, spacing: 12) {
-            CardHeader(title: "Movement calendar", systemImage: "calendar", tint: Theme.exercise,
-                       trailing: "\(activeDays) active days")
+            CardHeader(title: "Activity", systemImage: "calendar", tint: Theme.exercise,
+                       trailing: "\(activeDays) days")
             GeometryReader { geo in
                 let gap: CGFloat = 3
                 let size = min(22, (geo.size.width - gap * CGFloat(weeks - 1)) / CGFloat(weeks))

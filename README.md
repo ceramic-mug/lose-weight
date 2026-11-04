@@ -2,8 +2,10 @@
 
 A simple weight-loss helper for iPhone, iPad and Mac, for people who don't want to count every calorie.
 
-- **Log food in three taps.** Pick where it came from (home cooked, fast food, restaurant, cafeteria, packaged, snack or drink), how healthy it was (lighter, balanced or indulgent), and how much (small, regular or large).
-- **Log exercise.** Pick the type, how hard it was (using the "talk test"), and the minutes. Apple Health workouts are imported automatically.
+- **Log food in three taps.** Pick where it came from (home cooked, fast food, restaurant, cafeteria, packaged, snack or drink), how healthy it was (lighter, balanced or indulgent), and how much (small, regular or large). Tapping the portion saves the meal, and recent meals can be logged again in one tap.
+- **Log exercise in two taps.** Pick the type, then tap the minutes. Effort defaults to Moderate, or whatever you used last time.
+- **Manual entry comes first.** Apple Health and Apple Watch import is optional and off by default.
+- **Short screens.** All explanations live on one Explanations page, reached from the **?** buttons and from Settings.
 - **Log weight daily.** Readings are smoothed into a trend line so daily water-weight swings don't discourage you.
 - **See your progress.** A daily budget ring, weight and eating charts, an activity calendar, and a weekly report card with plain-language tips.
 - **Follows medical guidelines.** Targets and tips come from NIH, CDC, USDA MyPlate, the HHS Physical Activity Guidelines and the Compendium of Physical Activities. See [docs/GUIDELINES.md](docs/GUIDELINES.md).

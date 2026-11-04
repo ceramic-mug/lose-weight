@@ -78,24 +78,24 @@ struct OnboardingView: View {
             Text("Lose weight without counting every bite")
                 .font(.largeTitle.weight(.bold))
             VStack(alignment: .leading, spacing: 14) {
-                feature("fork.knife", "Log meals in three taps", "Where it came from, how healthy, and how much. That's it.")
-                feature("figure.walk", "Track movement simply", "Type and minutes. Apple Health workouts come in automatically.")
-                feature("chart.line.downtrend.xyaxis", "See real progress", "A smoothed weight trend, clear charts, and a weekly report card.")
-                feature("stethoscope", "Built on medical guidelines", "Targets follow NIH, CDC and USDA advice for safe, steady loss.")
+                feature("fork.knife", "Log a meal in three taps")
+                feature("figure.walk", "Track exercise in two")
+                feature("chart.line.downtrend.xyaxis", "See your real trend")
             }
-            Text("This app gives general guidance, not medical advice. If you have a health condition, take medication that affects weight, or plan a big change, talk to your doctor first.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 4) {
+                Text("Not medical advice.")
+                ExplainLink(topic: .safety, title: "Learn more")
+            }
+            .font(.footnote)
+            .foregroundStyle(.secondary)
         }
     }
 
-    private func feature(_ icon: String, _ title: String, _ detail: String) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: icon).font(.title3).foregroundStyle(Theme.accent).frame(width: 30)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.headline)
-                Text(detail).font(.subheadline).foregroundStyle(.secondary)
-            }
+    private func feature(_ icon: String, _ title: String) -> some View {
+        Label {
+            Text(title).font(.headline)
+        } icon: {
+            Image(systemName: icon).foregroundStyle(Theme.accent)
         }
     }
 
@@ -163,13 +163,9 @@ struct ProfileDraft {
 
 private struct StepTitle: View {
     let title: String
-    let subtitle: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.title.weight(.bold))
-            Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
-        }
+        Text(title).font(.title.weight(.bold))
     }
 }
 
@@ -177,7 +173,7 @@ struct AboutYouStep: View {
     @Binding var draft: ProfileDraft
 
     var body: some View {
-        StepTitle(title: "About you", subtitle: "Used to estimate how much energy your body needs each day.")
+        StepTitle(title: "About you")
 
         VStack(alignment: .leading, spacing: 16) {
             Picker("Units", selection: $draft.units) {
@@ -200,7 +196,7 @@ struct AboutYouStep: View {
                 .labelsHidden()
             }
             if !draft.isAdult {
-                Label("This app is designed for adults. For under-18s, weight goals should be set with a pediatrician.", systemImage: "exclamationmark.triangle")
+                Label("For adults only", systemImage: "exclamationmark.triangle")
                     .font(.footnote)
                     .foregroundStyle(Theme.indulgent)
             }
@@ -219,7 +215,7 @@ struct SafetyStep: View {
     @Binding var draft: ProfileDraft
 
     var body: some View {
-        StepTitle(title: "A couple of safety questions", subtitle: "Some situations call for a doctor-guided plan instead of a calorie deficit. Your answers stay on your devices.")
+        StepTitle(title: "Safety check")
 
         VStack(alignment: .leading, spacing: 16) {
             Toggle("I'm pregnant or breastfeeding", isOn: $draft.pregnant)
@@ -228,13 +224,9 @@ struct SafetyStep: View {
         .card()
 
         if draft.maintenanceOnly {
-            Label {
-                Text("We'll set your target to **maintenance** — no calorie cut. You can still track healthy choices and movement. Please work with your doctor or a registered dietitian on any weight goals.")
-            } icon: {
-                Image(systemName: "heart.text.square").foregroundStyle(Theme.accent)
-            }
-            .font(.subheadline)
-            .card()
+            Label("Maintenance mode: no calorie cut", systemImage: "heart.text.square")
+                .font(.subheadline)
+                .card()
         }
     }
 }
@@ -243,7 +235,7 @@ struct ActivityStep: View {
     @Binding var draft: ProfileDraft
 
     var body: some View {
-        StepTitle(title: "How active is a normal day?", subtitle: "Not counting workouts — you'll log those separately and they add to your budget.")
+        StepTitle(title: "A normal day, not counting workouts")
 
         VStack(spacing: 10) {
             ForEach(ActivityLevel.allCases) { level in
@@ -251,10 +243,7 @@ struct ActivityStep: View {
                     draft.activity = level
                 } label: {
                     HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(level.displayName).font(.headline)
-                            Text(level.example).font(.subheadline).foregroundStyle(.secondary)
-                        }
+                        Text(level.displayName).font(.headline)
                         Spacer()
                         Image(systemName: draft.activity == level ? "checkmark.circle.fill" : "circle")
                             .font(.title2)
@@ -279,10 +268,10 @@ struct GoalStep: View {
         let target = TargetCalculator.dailyTarget(for: draft.profile)
         let bmi = TargetCalculator.bmi(weightKg: draft.weightKg, heightCm: draft.heightCm)
 
-        StepTitle(title: "Set a first goal", subtitle: "Losing just 5–10% of your weight improves blood pressure, blood sugar and cholesterol. You can always set a new goal later.")
+        StepTitle(title: "First goal")
 
         if draft.maintenanceOnly {
-            Text("You're in maintenance mode, so there's no weight-loss goal to set.").card()
+            Text("Maintenance mode").card()
         } else {
             VStack(alignment: .leading, spacing: 16) {
                 if !suggestions.isEmpty {
@@ -298,14 +287,12 @@ struct GoalStep: View {
                 }
                 WeightField(title: "Goal weight", kg: $draft.goalWeightKg, units: units)
                 if draft.goalWeightKg < minGoal {
-                    Label("That's below a healthy weight for your height. The lowest goal we'll set is \(units.formatWeight(minGoal, decimals: 0)).",
-                          systemImage: "exclamationmark.triangle")
+                    Label("Lowest healthy goal: \(units.formatWeight(minGoal, decimals: 0))", systemImage: "exclamationmark.triangle")
                         .font(.footnote)
                         .foregroundStyle(Theme.indulgent)
                 }
-                Text("Current BMI \(bmi.formatted(.number.precision(.fractionLength(1)))) — \(TargetCalculator.bmiCategory(bmi).lowercased()). BMI is a rough screening tool; it doesn't account for muscle, age or ethnicity.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                LabeledContent("BMI", value: bmi.formatted(.number.precision(.fractionLength(1))))
+                    .font(.subheadline)
             }
             .card()
 
@@ -318,22 +305,12 @@ struct GoalStep: View {
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
-                Text("The CDC recommends 1–2 lb (0.5–1 kg) a week at most. Slower is easier to stick with.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
             .card()
         }
 
         HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Your daily food budget").font(.headline)
-                Text(target.limitedByFloor
-                     ? "Capped at a safe minimum, so loss may be a bit slower than the pace you picked."
-                     : "Logged exercise adds to this each day.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Text("Daily food budget").font(.headline)
             Spacer()
             Text(Format.kcal(target.targetKcal))
                 .font(.title2.weight(.bold))
@@ -348,46 +325,29 @@ struct FinishStep: View {
     @Environment(HealthKitService.self) private var health
 
     var body: some View {
-        StepTitle(title: "Last touches", subtitle: "Make it work the way you like.")
+        StepTitle(title: "Options")
 
         VStack(alignment: .leading, spacing: 16) {
-            if health.isAvailable {
-                Toggle(isOn: Binding(
-                    get: { draft.useHealth },
-                    set: { newValue in
-                        if newValue {
-                            Task { draft.useHealth = await health.requestAuthorization() }
-                        } else {
-                            draft.useHealth = false
-                        }
-                    }
-                )) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Connect Apple Health")
-                        Text("Import workouts and smart-scale weigh-ins; save your weight to Health.")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-            }
-            Toggle(isOn: $draft.reminderEnabled) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Evening reminder")
-                    Text("One gentle nudge a day at 8 pm.").font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            Toggle(isOn: $draft.showCalories) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Show calorie numbers")
-                    Text("Off keeps things simple: you'll see percentages and plain-language feedback.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-            }
+            Toggle("Daily reminder at 8 pm", isOn: $draft.reminderEnabled)
+            Toggle("Show calorie numbers", isOn: $draft.showCalories)
         }
         .card()
 
-        Label("Your data stays private in your iCloud account and syncs between your iPhone and Mac. No account, no ads.", systemImage: "lock.shield")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
+        if health.isAvailable {
+            Toggle(isOn: Binding(
+                get: { draft.useHealth },
+                set: { newValue in
+                    if newValue {
+                        Task { draft.useHealth = await health.requestAuthorization() }
+                    } else {
+                        draft.useHealth = false
+                    }
+                }
+            )) {
+                Label("Apple Health / Watch (optional)", systemImage: "applewatch")
+            }
+            .card()
+        }
     }
 }
 

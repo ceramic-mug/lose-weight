@@ -12,14 +12,13 @@ struct SettingsView: View {
     @Query(sort: \WeightEntry.timestamp) private var weights: [WeightEntry]
 
     @State private var confirmDelete = false
-    @State private var showGuidelines = false
 
     var body: some View {
         let target = profile.dailyTarget(currentWeightKg: Snapshot(profile: profile, weights: weights).trend.last?.trendKg)
         Form {
             Section("Your plan") {
                 LabeledContent("Daily food budget", value: Format.kcal(target.targetKcal))
-                LabeledContent("Maintenance (estimated)", value: Format.kcal(target.maintenanceKcal))
+                LabeledContent("Maintenance", value: Format.kcal(target.maintenanceKcal))
                 Picker("Pace", selection: $profile.paceRaw) {
                     ForEach(LossPace.allCases) { p in
                         Text("\(p.displayName) · \(profile.units.formatWeight(p.kgPerWeek, decimals: profile.units == .metric ? 2 : 1))/wk").tag(p.rawValue)
@@ -28,11 +27,7 @@ struct SettingsView: View {
                 .disabled(profile.maintenanceOnly)
                 WeightField(title: "Goal weight", kg: $profile.goalWeightKg, units: profile.units)
                     .disabled(profile.maintenanceOnly)
-                Toggle("Maintenance only (no calorie cut)", isOn: $profile.maintenanceOnly)
-                if target.limitedByFloor {
-                    Text("Your budget is held at a safe minimum, so loss may be slower than the pace you chose.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
+                Toggle("Maintenance only", isOn: $profile.maintenanceOnly)
             }
 
             Section("About you") {
@@ -59,7 +54,7 @@ struct SettingsView: View {
 
             Section {
                 if health.isAvailable {
-                    Toggle("Use Apple Health", isOn: Binding(
+                    Toggle("Apple Health / Watch", isOn: Binding(
                         get: { profile.useHealth },
                         set: { newValue in
                             if newValue {
@@ -78,16 +73,15 @@ struct SettingsView: View {
                             LabeledContent("Last synced", value: last.formatted(date: .omitted, time: .shortened))
                         }
                     }
-                } else {
-                    Text("Apple Health is available on iPhone. Data logged there syncs here through iCloud.")
-                        .font(.caption).foregroundStyle(.secondary)
                 }
                 Toggle("Daily reminder", isOn: $profile.reminderEnabled)
                 if profile.reminderEnabled {
                     DatePicker("Time", selection: reminderTime, displayedComponents: .hourAndMinute)
                 }
             } header: {
-                Text("Health & reminders")
+                Text("Reminders & Health")
+            } footer: {
+                if health.isAvailable { Text("Apple Health is optional.") }
             }
 
             Section("Your data") {
@@ -98,11 +92,12 @@ struct SettingsView: View {
                 Button("Delete all data", role: .destructive) { confirmDelete = true }
             }
 
-            Section("About") {
-                Button("How the numbers work") { showGuidelines = true }
-                Text("Lose Weight offers general guidance based on public health guidelines. It is not a medical device and doesn't replace advice from your doctor or a registered dietitian.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Section {
+                NavigationLink {
+                    ExplainView(showsDone: false)
+                } label: {
+                    Label("Explanations", systemImage: "questionmark.circle")
+                }
             }
         }
         .formStyle(.grouped)
@@ -117,7 +112,6 @@ struct SettingsView: View {
         } message: {
             Text("This removes your data from this device and iCloud. Data in Apple Health is not affected.")
         }
-        .sheet(isPresented: $showGuidelines) { GuidelinesSheet() }
     }
 
     private var reminderTime: Binding<Date> {
@@ -153,42 +147,6 @@ struct SettingsView: View {
         try? context.delete(model: UserProfile.self)
         try? context.save()
         ReminderService.cancel()
-    }
-}
-
-/// Plain-language explanation of the method, with sources.
-struct GuidelinesSheet: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("Your daily budget") {
-                    Text("We estimate your resting energy with the Mifflin-St Jeor equation, multiply by your everyday activity level, then subtract about 275–825 kcal depending on the pace you chose (0.25–0.75 kg a week). The budget never drops below 1,200 kcal (1,500 for men), per NIH guidance.")
-                }
-                Section("Food estimates") {
-                    Text("Each category and healthiness level maps to a typical calorie range for a regular portion; small is about 60% of that and large about 150%. These are honest ranges, not exact counts — the goal is to spot patterns, not to be perfect.")
-                    Text("Healthiness levels follow the USDA MyPlate and Harvard Healthy Eating Plate ideas: half the plate vegetables and fruit, whole grains, lean protein, and fewer fried, sugary or creamy foods.")
-                }
-                Section("Exercise") {
-                    Text("Calories burned use MET values from the Compendium of Physical Activities. Only the energy above resting is added to your budget, so it isn't counted twice.")
-                    Text("The weekly target is 150 minutes of moderate activity (or 75 hard), plus strength training on 2 days — the Physical Activity Guidelines for Americans. Hard minutes count double.")
-                }
-                Section("Weight trend") {
-                    Text("Daily weight swings by 1–2 lb from water and salt. We smooth readings with a 10% exponential moving average so you can see the real direction. The weekly rate is the slope of that trend over the last three weeks.")
-                }
-                Section("Safety") {
-                    Text("We recommend losing no more than 0.5–1 kg (1–2 lb) a week (CDC). If your trend drops faster than 1% of your body weight a week, the app will suggest easing off. No calorie cut is set during pregnancy, breastfeeding, or with an eating-disorder history.")
-                }
-            }
-            .navigationTitle("How the numbers work")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
-            }
-        }
-        #if os(macOS)
-        .frame(minWidth: 520, minHeight: 560)
-        #endif
     }
 }
 

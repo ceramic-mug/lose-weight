@@ -95,6 +95,8 @@ Tips are rule-based. They always appear in this order: **cautions** first, then 
 
 ## 6. Design choices for "normal people"
 
-- Three taps to log a meal; repeat meals take one tap ("Same as yesterday", recent picks).
+- Three taps to log a meal, with no Save button: the portion tap saves. Repeat meals take one tap.
+- Two taps to log exercise. Apple Health / Watch is optional; manual entry is the main path.
+- Screens show data, not prose. Every explanation lives on the in-app **Explanations** page (`ExplainView`).
 - Calorie numbers are **off** by default: users see percentages and plain-language feedback.
 - Tips and alerts never shame. A single gentle reminder a day, at most.

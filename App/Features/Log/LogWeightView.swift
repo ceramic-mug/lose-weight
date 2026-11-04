@@ -39,26 +39,28 @@ struct LogWeightView: View {
                 }
 
                 if let last = weights.first {
-                    let diff = units.kg(fromDisplay: value) - last.kg
-                    Text("Last: \(units.formatWeight(last.kg)) on \(last.timestamp.formatted(date: .abbreviated, time: .omitted)) (\(units.formatWeightChange(diff)))")
-                        .font(.footnote)
+                    Text("\(units.formatWeightChange(units.kg(fromDisplay: value) - last.kg)) vs \(last.timestamp.formatted(.dateTime.weekday(.abbreviated)))")
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .monospacedDigit()
                 }
 
                 DatePicker("Date", selection: $date, in: ...Date.now, displayedComponents: .date)
-                    .frame(maxWidth: 320)
+                    .labelsHidden()
 
-                Text("Tip: weigh in at the same time each day — first thing in the morning works best. Daily ups and downs are normal; the app smooths them into a trend.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 420)
+                Button(action: save) {
+                    Text("Save").font(.headline).frame(maxWidth: 320, minHeight: 34)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.weight)
+                .controlSize(.large)
+                .disabled(!isValid)
                 Spacer(minLength: 0)
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.pageBackground)
-            .navigationTitle("Log weight")
+            .navigationTitle("Weight")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -66,11 +68,7 @@ struct LogWeightView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save)
-                        .disabled(!isValid)
-                        .fontWeight(.semibold)
-                }
+                ToolbarItem(placement: .primaryAction) { ExplainButton(topic: .trend) }
             }
             .onAppear {
                 guard !didLoad else { return }

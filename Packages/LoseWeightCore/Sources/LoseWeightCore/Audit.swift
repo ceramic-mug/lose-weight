@@ -280,7 +280,7 @@ public enum InsightEngine {
             out.append(Insight(
                 kind: .caution,
                 title: "Losing faster than recommended",
-                detail: "Your trend is dropping more than 1% of body weight a week. Slower loss is easier to keep off and safer — consider eating a little more, and check in with your doctor if this continues.",
+                detail: "Over 1% of body weight a week. Eat a little more; see a doctor if it continues.",
                 systemImage: "exclamationmark.triangle"
             ))
         }
@@ -288,7 +288,7 @@ public enum InsightEngine {
             out.append(Insight(
                 kind: .caution,
                 title: "Eating well under your target",
-                detail: "Your estimated intake is far below your daily target. Very low intake can backfire — aim to land close to your budget, not under it.",
+                detail: "Aim to land close to your budget, not far under it.",
                 systemImage: "exclamationmark.triangle"
             ))
         }
@@ -297,24 +297,24 @@ public enum InsightEngine {
         if r.guidelineMinutesPerWeek >= EnergyConstants.weeklyActiveMinutesGoal {
             out.append(Insight(
                 kind: .celebrate,
-                title: "You hit the activity guideline",
-                detail: "\(Int(r.guidelineMinutesPerWeek.rounded())) active minutes a week — at or above the recommended 150. That's great for your heart, mood, and weight.",
+                title: "Activity goal met",
+                detail: "\(Int(r.guidelineMinutesPerWeek.rounded())) active minutes a week.",
                 systemImage: "figure.run"
             ))
         }
         if let share = r.healthyShare, r.mealsLogged >= 5, share >= 0.75 {
             out.append(Insight(
                 kind: .celebrate,
-                title: "Mostly lighter or balanced choices",
-                detail: "\(Int((share * 100).rounded()))% of what you logged was lighter or balanced. Keep it up.",
+                title: "Mostly healthy choices",
+                detail: "\(Int((share * 100).rounded()))% lighter or balanced.",
                 systemImage: "leaf"
             ))
         }
         if let change = r.trendChangeKg, wantsLoss, change < -0.1 {
             out.append(Insight(
                 kind: .celebrate,
-                title: "Your trend weight is going down",
-                detail: "Your smoothed weight moved in the right direction this period. Daily ups and downs are normal; the trend is what counts.",
+                title: "Trend is going down",
+                detail: "Keep doing what you're doing.",
                 systemImage: "chart.line.downtrend.xyaxis"
             ))
         }
@@ -329,7 +329,7 @@ public enum InsightEngine {
             out.append(Insight(
                 kind: .suggest,
                 title: "Swap two takeout meals a week",
-                detail: "\(takeout) of \(meals) meals were fast food or restaurant. Cooking two of those at home saves about \(Int((saving * 2).rounded(toNearest: 50))) kcal a week (≈\(kgPerWeek.formatted(.number.precision(.fractionLength(2)))) kg).",
+                detail: "\(takeout) of \(meals) meals were takeout. Cooking 2 at home saves ≈\(Int((saving * 2).rounded(toNearest: 50))) kcal (≈\(kgPerWeek.formatted(.number.precision(.fractionLength(2)))) kg) a week.",
                 systemImage: "frying.pan"
             ))
         }
@@ -337,8 +337,8 @@ public enum InsightEngine {
         if Double(sugaryDrinks) * weekScale >= 3 {
             out.append(Insight(
                 kind: .suggest,
-                title: "Sweet drinks add up",
-                detail: "About \(Int((Double(sugaryDrinks) * weekScale).rounded())) sweet drinks a week. Swapping half for water, sparkling water, or unsweetened coffee is one of the easiest wins.",
+                title: "Fewer sweet drinks",
+                detail: "≈\(Int((Double(sugaryDrinks) * weekScale).rounded())) a week. Swap half for water or unsweetened coffee.",
                 systemImage: "cup.and.saucer"
             ))
         }
@@ -346,8 +346,8 @@ public enum InsightEngine {
         if r.mealsLogged >= 5, Double(indulgent) / Double(r.mealsLogged) > 0.35 {
             out.append(Insight(
                 kind: .suggest,
-                title: "Try one lighter swap a day",
-                detail: "Over a third of entries were indulgent. You don't need to cut treats — just make one meal a day the lighter version (e.g. grilled instead of fried, half the plate veg).",
+                title: "One lighter swap a day",
+                detail: "Over a third were indulgent. Try grilled instead of fried, or half the plate veg.",
                 systemImage: "leaf"
             ))
         }
@@ -357,7 +357,7 @@ public enum InsightEngine {
             out.append(Insight(
                 kind: .suggest,
                 title: "\(Int(minutesShort.rounded())) more active minutes a week",
-                detail: "That's about \(max(perDay, 5)) minutes on 5 days — a brisk walk at lunch counts. Brisk walking or harder counts toward the 150-minute guideline.",
+                detail: "≈\(max(perDay, 5)) min on 5 days. A brisk walk counts.",
                 systemImage: "figure.walk"
             ))
         }
@@ -365,15 +365,15 @@ public enum InsightEngine {
             out.append(Insight(
                 kind: .suggest,
                 title: "Add strength twice a week",
-                detail: "Guidelines recommend muscle-strengthening on 2 days a week. Bodyweight squats, push-ups, or resistance bands at home work fine.",
+                detail: "Squats, push-ups or bands at home are enough.",
                 systemImage: "dumbbell"
             ))
         }
         if Double(r.daysWithAnyLog) / Double(r.days) < 0.6 {
             out.append(Insight(
                 kind: .suggest,
-                title: "Log a little, most days",
-                detail: "People who track regularly lose more weight. Even a quick weigh-in or one meal a day keeps the picture accurate.",
+                title: "Log most days",
+                detail: "Even one entry a day helps.",
                 systemImage: "checkmark.circle"
             ))
         }
@@ -381,7 +381,7 @@ public enum InsightEngine {
             out.append(Insight(
                 kind: .suggest,
                 title: "Trend is creeping up",
-                detail: "Not a failure — just a signal. Portions are the easiest lever: try 'small' or 'regular' instead of 'large' at one meal a day.",
+                detail: "Try a smaller portion at one meal a day.",
                 systemImage: "arrow.up.right"
             ))
         }
@@ -390,7 +390,7 @@ public enum InsightEngine {
             out.append(Insight(
                 kind: .celebrate,
                 title: "\(name)s are your best day",
-                detail: "Your food choices tend to be healthiest on \(name)s. What's different about that day? Try borrowing the routine.",
+                detail: "Your healthiest choices. Borrow that routine.",
                 systemImage: "calendar"
             ))
         }

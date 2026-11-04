@@ -50,6 +50,7 @@ struct TodayView: View {
         }
         .background(Theme.pageBackground)
         .navigationTitle("Today")
+        .toolbar { ToolbarItem(placement: .primaryAction) { ExplainButton(topic: .budget) } }
     }
 
     private var isWide: Bool {
@@ -71,7 +72,7 @@ struct TodayView: View {
     @ViewBuilder
     private func streakFooter(_ streak: Int) -> some View {
         if streak > 1 {
-            Label("\(streak)-day logging streak", systemImage: "flame")
+            Label("\(streak)-day streak", systemImage: "flame")
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(.secondary)
         }
@@ -86,7 +87,7 @@ struct BudgetCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            CardHeader(title: "Food budget", systemImage: "fork.knife", tint: Theme.food)
+            CardHeader(title: "Food", systemImage: "fork.knife", tint: Theme.food)
             HStack(spacing: 24) {
                 ZStack {
                     ProgressRing(fraction: budget.fraction, tint: budget.status.color, lineWidth: 18)
@@ -94,22 +95,21 @@ struct BudgetCard: View {
                         Text(Format.percent(budget.fraction))
                             .font(.title.weight(.bold))
                             .monospacedDigit()
-                        Text("of today")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                 }
                 .frame(width: 140, height: 140)
 
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(headline)
                         .font(.title3.weight(.semibold))
-                    Text(subline)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    if showNumbers {
+                        Text("\(Format.kcal(budget.eaten.mid)) of \(Format.kcal(budget.budgetKcal))")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
                     if budget.exerciseKcal > 0 {
-                        Label(showNumbers ? "+\(Format.kcal(budget.exerciseKcal)) from exercise" : "Exercise added room",
-                              systemImage: "plus.circle.fill")
+                        Label(showNumbers ? "+\(Format.kcal(budget.exerciseKcal))" : "Exercise bonus", systemImage: "plus.circle.fill")
                             .font(.caption.weight(.medium))
                             .foregroundStyle(Theme.exercise)
                     }
@@ -121,27 +121,14 @@ struct BudgetCard: View {
     }
 
     private var headline: String {
-        if budget.eaten.mid == 0 { return "Nothing logged yet" }
+        if budget.eaten.mid == 0 { return "Nothing yet" }
         switch budget.status {
         case .under: return "Room to spare"
-        case .onTrack: return "Right on track"
-        case .over: return "Over for today"
+        case .onTrack: return "On track"
+        case .over: return "Over budget"
         }
     }
 
-    private var subline: String {
-        if showNumbers {
-            let remaining = budget.remainingKcal
-            let eaten = "Eaten ≈ \(Format.kcalRange(budget.eaten)) of \(Format.kcal(budget.budgetKcal))."
-            return remaining >= 0 ? "\(eaten) About \(Format.kcal(remaining)) left." : "\(eaten) About \(Format.kcal(-remaining)) over."
-        }
-        switch budget.status {
-        case .under where budget.eaten.mid == 0: return "Tap Food after each meal — it takes three taps."
-        case .under: return budget.fraction < 0.5 ? "Plenty left for a full meal." : "Enough left for a lighter meal or snack."
-        case .onTrack: return "You're close to your target. Nice."
-        case .over: return "No big deal — one day doesn't define the week. A walk helps."
-        }
-    }
 }
 
 // MARK: - Activity
@@ -157,13 +144,10 @@ struct ActivityCard: View {
         let goal = EnergyConstants.weeklyActiveMinutesGoal
 
         VStack(alignment: .leading, spacing: 12) {
-            CardHeader(title: "Active minutes this week", systemImage: "figure.run", tint: Theme.exercise,
-                       trailing: "\(Int(credited)) / \(Int(goal))")
+            CardHeader(title: "Active this week", systemImage: "figure.run", tint: Theme.exercise,
+                       trailing: "\(Int(credited)) / \(Int(goal)) min")
             GoalBar(value: credited, goal: goal, tint: Theme.exercise)
             HStack {
-                Text(credited >= goal ? "Guideline met — great work." : "\(Int(goal - credited)) min to go. Hard effort counts double.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 Spacer()
                 HStack(spacing: 4) {
                     ForEach(0..<EnergyConstants.weeklyStrengthDaysGoal, id: \.self) { i in
@@ -191,14 +175,14 @@ struct WeightCard: View {
             CardHeader(title: "Weight", systemImage: "scalemass", tint: Theme.weight,
                        trailing: snapshot.kgPerWeek.map { "\(units.formatWeightChange($0)) / wk" })
             if recent.isEmpty {
-                EmptyHint(text: "Weigh in to start your trend line.", systemImage: "scalemass")
+                EmptyHint(text: "No weigh-ins yet", systemImage: "scalemass")
             } else {
                 HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(units.formatWeight(snapshot.currentKg))
                             .font(.title2.weight(.semibold))
                             .monospacedDigit()
-                        Text("trend · goal \(units.formatWeight(snapshot.profile.goalWeightKg, decimals: 0))")
+                        Text("Goal \(units.formatWeight(snapshot.profile.goalWeightKg, decimals: 0))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -231,9 +215,9 @@ struct TodayLogCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            CardHeader(title: "Today's log", systemImage: "list.bullet")
+            CardHeader(title: "Logged", systemImage: "list.bullet")
             if foods.isEmpty && exercises.isEmpty {
-                EmptyHint(text: "Your meals and workouts will show up here.")
+                EmptyHint(text: "Nothing logged today")
             }
             ForEach(MealSlot.allCases) { slot in
                 let items = foods.filter { $0.meal == slot }.sorted { $0.timestamp < $1.timestamp }

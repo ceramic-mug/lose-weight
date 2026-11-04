@@ -58,23 +58,23 @@ struct InsightsView: View {
                 LazyVGrid(columns: tileColumns, spacing: 12) {
                     StatTile(title: "Healthy choices",
                              value: report.healthyShare.map(Format.percent) ?? "—",
-                             caption: "\(report.mealsLogged) items logged",
+                             caption: "\(report.mealsLogged) items",
                              systemImage: "leaf", tint: Theme.lighter)
-                    StatTile(title: "Avg. daily food",
+                    StatTile(title: "Daily food",
                              value: report.averageDailyKcal.map { profile.showCalorieNumbers ? Format.kcal($0) : Format.percent($0 / max(report.targetKcal, 1)) } ?? "—",
-                             caption: profile.showCalorieNumbers ? "Target \(Format.kcal(report.targetKcal))" : "of your daily target",
+                             caption: profile.showCalorieNumbers ? "of \(Format.kcal(report.targetKcal))" : "of budget",
                              systemImage: "fork.knife", tint: Theme.food)
                     StatTile(title: "Active minutes",
                              value: "\(Int(report.guidelineMinutesPerWeek.rounded()))",
-                             caption: "per week · goal 150",
+                             caption: "/ 150 per week",
                              systemImage: "figure.run", tint: Theme.exercise)
                     StatTile(title: "Strength days",
                              value: "\(report.strengthDays)",
-                             caption: "goal 2 per week",
+                             caption: "/ 2 per week",
                              systemImage: "dumbbell", tint: Theme.exercise)
                     StatTile(title: "Trend weight",
                              value: report.trendChangeKg.map { units.formatWeightChange($0) } ?? "—",
-                             caption: report.kgPerWeek.map { "\(units.formatWeightChange($0)) per week" } ?? "\(report.weighIns) weigh-ins",
+                             caption: report.kgPerWeek.map { "\(units.formatWeightChange($0))/wk" },
                              systemImage: "scalemass", tint: Theme.weight)
                     StatTile(title: "Days logged",
                              value: "\(report.daysWithAnyLog) / \(report.days)",
@@ -85,18 +85,13 @@ struct InsightsView: View {
                 GoalCard(snapshot: snap)
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("What to focus on").font(.title3.weight(.semibold))
+                    Text("Focus").font(.title3.weight(.semibold))
                     if report.insights.isEmpty {
-                        EmptyHint(text: "Log for a few days and personalised tips will appear here.")
-                            .card()
+                        EmptyHint(text: "Tips appear after a few days of logging").card()
                     }
                     ForEach(report.insights) { InsightRow(insight: $0) }
                 }
 
-                Text("Estimates are based on typical portions and published guidelines. They're a guide, not medical advice — talk to your doctor or a registered dietitian about your own needs.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 8)
             }
             .padding()
             .frame(maxWidth: 900)
@@ -104,6 +99,7 @@ struct InsightsView: View {
         }
         .background(Theme.pageBackground)
         .navigationTitle("Insights")
+        .toolbar { ToolbarItem(placement: .primaryAction) { ExplainButton(topic: .reportCard) } }
     }
 }
 
@@ -129,9 +125,6 @@ struct ReportCardHeader: View {
                 Text("\(report.start.formatted(.dateTime.month(.abbreviated).day())) – \(report.end.formatted(.dateTime.month(.abbreviated).day()))")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Text("Food quality 40 · Near target 20 · Movement 30 · Logging 10")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
         }
@@ -154,7 +147,7 @@ struct GoalCard: View {
         let units = snapshot.units
         let p = snapshot.profile
         VStack(alignment: .leading, spacing: 12) {
-            CardHeader(title: "Goal progress", systemImage: "flag.checkered", tint: Theme.weight,
+            CardHeader(title: "Goal", systemImage: "flag.checkered", tint: Theme.weight,
                        trailing: Format.percent(snapshot.goalProgress))
             GoalBar(value: snapshot.goalProgress, goal: 1, tint: Theme.weight)
             HStack {
@@ -164,7 +157,7 @@ struct GoalCard: View {
                 }
                 Spacer()
                 VStack {
-                    Text("Now (trend)").font(.caption).foregroundStyle(.secondary)
+                    Text("Now").font(.caption).foregroundStyle(.secondary)
                     Text(units.formatWeight(snapshot.currentKg)).font(.subheadline.weight(.medium))
                 }
                 Spacer()
@@ -174,20 +167,16 @@ struct GoalCard: View {
                 }
             }
             .monospacedDigit()
-            Text(projectionText)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            if let projection = projectionText {
+                Text(projection).font(.footnote).foregroundStyle(.secondary)
+            }
         }
         .card()
     }
 
-    private var projectionText: String {
-        if !snapshot.profile.wantsLoss { return "You're in maintenance mode — the aim is to hold steady and build healthy habits." }
-        if let date = snapshot.projectedGoalDate {
-            return "At your current pace you'll reach your goal around \(date.formatted(.dateTime.month(.wide).year()))."
-        }
-        if snapshot.kgPerWeek == nil { return "Keep weighing in — after about a week we can project when you'll reach your goal." }
-        return "Your trend is flat or rising right now. Small, steady changes add up — check the tips below."
+    private var projectionText: String? {
+        guard snapshot.profile.wantsLoss else { return "Maintenance" }
+        return snapshot.projectedGoalDate.map { "On pace for \($0.formatted(.dateTime.month(.abbreviated).year()))" }
     }
 }
 
