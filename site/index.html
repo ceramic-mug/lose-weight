@@ -92,6 +92,9 @@ dd { margin: 0; color: var(--ink-2); }
 
 footer { padding-top: 32px; padding-bottom: 56px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: .9rem; display: flex; flex-wrap: wrap; gap: 8px 20px; }
 footer a { color: var(--ink-2); }
+.qr { display: flex; align-items: center; gap: 16px; width: 100%; margin-bottom: 20px; }
+.qr-box { background: #fdfbf7; padding: 10px; border-radius: 10px; line-height: 0; flex: none; }
+.qr-code { width: 112px; height: 112px; display: block; }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
@@ -142,6 +145,10 @@ footer a { color: var(--ink-2); }
 </main>
 
 <footer>
+  <div class="qr">
+    <div class="qr-box"><svg class="qr-code" role="img" aria-label="QR code for ceramic-mug.github.io/lose-weight" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29"><path stroke="#1c1b19" d="M0 0.5h7m4 0h4m2 0h1m4 0h7m-29 1h1m5 0h1m1 0h1m5 0h1m1 0h1m3 0h1m1 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m1 0h3m3 0h1m1 0h1m1 0h1m3 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h6m3 0h1m1 0h2m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h2m1 0h2m2 0h5m1 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m9 0h1m1 0h1m1 0h1m1 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-21 1h5m1 0h1m1 0h1m1 0h3m-21 1h1m5 0h1m1 0h1m2 0h1m1 0h2m2 0h1m3 0h2m2 0h3m-24 1h2m3 0h3m2 0h3m2 0h1m3 0h2m1 0h2m-27 1h3m2 0h4m3 0h4m5 0h3m-25 1h2m3 0h1m1 0h1m3 0h2m1 0h1m1 0h1m2 0h3m2 0h2m-25 1h1m1 0h1m2 0h5m1 0h1m2 0h2m3 0h1m1 0h2m4 0h1m-28 1h1m2 0h1m2 0h1m1 0h2m2 0h1m1 0h2m1 0h2m2 0h3m2 0h2m-26 1h2m1 0h2m2 0h3m2 0h4m1 0h3m2 0h2m-27 1h3m2 0h1m1 0h4m1 0h1m1 0h3m1 0h2m1 0h2m1 0h1m1 0h1m1 0h1m-27 1h1m1 0h3m2 0h2m1 0h7m4 0h1m1 0h2m-27 1h2m3 0h1m2 0h1m1 0h1m3 0h7m1 0h3m1 0h3m-29 1h3m1 0h1m1 0h3m1 0h2m1 0h1m1 0h1m3 0h1m1 0h2m1 0h2m2 0h1m-29 1h1m8 0h4m2 0h2m1 0h1m1 0h5m-25 1h1m4 0h2m1 0h2m3 0h1m3 0h1m2 0h5m1 0h3m-21 1h1m1 0h1m1 0h4m1 0h4m3 0h2m-26 1h7m2 0h1m1 0h1m1 0h3m2 0h3m1 0h1m1 0h3m-27 1h1m5 0h1m2 0h3m2 0h1m1 0h1m2 0h2m3 0h1m3 0h1m-29 1h1m1 0h3m1 0h1m6 0h2m1 0h1m2 0h7m1 0h1m-28 1h1m1 0h3m1 0h1m5 0h2m1 0h5m5 0h2m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h1m3 0h5m1 0h9m-28 1h1m5 0h1m8 0h1m5 0h1m1 0h1m1 0h2m1 0h1m-29 1h7m1 0h2m1 0h4m2 0h3m4 0h1m1 0h1"/></svg></div>
+    <span>Scan to open this page<br>on your phone.</span>
+  </div>
   <span>For iPhone and Mac.</span>
   <span>Not medical advice.</span>
   <a href="https://github.com/ceramic-mug/lose-weight/blob/main/docs/GUIDELINES.md">How the numbers work</a>

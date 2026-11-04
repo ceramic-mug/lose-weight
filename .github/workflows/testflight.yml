@@ -62,28 +62,25 @@ jobs:
             CODE_SIGN_ENTITLEMENTS=Config/LoseWeight-iOS-TestFlight.entitlements \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}"
 
+      - name: Temporary distribution certificate and profile
+        run: '"$RUNNER_TEMP/venv/bin/python" .github/scripts/signing.py create'
+
       - name: Upload to TestFlight
         run: |
-          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key><string>app-store-connect</string>
-            <key>destination</key><string>upload</string>
-            <key>teamID</key><string>${TEAM_ID}</string>
-            <key>signingStyle</key><string>automatic</string>
-          </dict>
-          </plist>
-          PLIST
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/LoseWeight.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
             -exportPath "$RUNNER_TEMP/export" \
-            -allowProvisioningUpdates \
             -authenticationKeyPath "$KEY_PATH" \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      - name: Revoke temporary certificate
+        if: always()
+        run: |
+          if [ -x "$RUNNER_TEMP/venv/bin/python" ] && [ -f "$KEY_PATH" ]; then
+            "$RUNNER_TEMP/venv/bin/python" .github/scripts/signing.py cleanup
+          fi
 
       - name: Remove API key
         if: always()
