@@ -32,6 +32,7 @@ targets:
       path: Config/Info.plist
       properties:
         CFBundleDisplayName: Lose Weight
+        ITSAppUsesNonExemptEncryption: false
         LSApplicationCategoryType: public.app-category.healthcare-fitness
         NSHealthShareUsageDescription: Lose Weight reads your workouts and weigh-ins so you don't have to enter them twice.
         NSHealthUpdateUsageDescription: Lose Weight saves the weights you log to Apple Health.
@@ -62,6 +63,3 @@ schemes:
     build:
       targets:
         LoseWeight: all
-    test:
-      targets:
-        - package: LoseWeightCore/LoseWeightCoreTests
