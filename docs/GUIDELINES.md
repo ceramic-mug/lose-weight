@@ -1,9 +1,9 @@
 # How the numbers work
 
-Every target, estimate and tip in Lose Weight comes from a published guideline. The constants live in
+Every target, estimate and tip in Sensible comes from a published guideline. The constants live in
 `Packages/LoseWeightCore`, and the tests in `Tests/LoseWeightCoreTests` check them against worked examples.
 
-> Lose Weight is a general wellness tool, not a medical device. It doesn't diagnose or treat anything.
+> Sensible is a general wellness tool, not a medical device. It doesn't diagnose or treat anything.
 
 ## 1. Daily food budget
 

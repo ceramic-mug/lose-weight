@@ -70,7 +70,7 @@ struct ExplainView: View {
                 section(.safety) {
                     Text("This app is for adults. If you're pregnant, breastfeeding, or have a history of an eating disorder, it sets your budget to maintenance (no calorie cut).")
                     Text("If your weight drops faster than 1% a week, the app will suggest easing off.")
-                    Text("Lose Weight gives general guidance and is not medical advice. Talk to your doctor or a registered dietitian about your own needs.")
+                    Text("Sensible gives general guidance and is not medical advice. Talk to your doctor or a registered dietitian about your own needs.")
                 }
                 section(.sources) {
                     ForEach(sources, id: \.self) { Text($0).font(.footnote) }

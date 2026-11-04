@@ -86,7 +86,7 @@ struct SettingsView: View {
 
             Section("Your data") {
                 ShareLink(item: CSVExport(foods: foods, exercises: exercises, weights: weights),
-                          preview: SharePreview("Lose Weight export.csv")) {
+                          preview: SharePreview("Sensible export.csv")) {
                     Label("Export as CSV", systemImage: "square.and.arrow.up")
                 }
                 Button("Delete all data", role: .destructive) { confirmDelete = true }

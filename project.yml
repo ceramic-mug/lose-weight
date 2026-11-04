@@ -31,11 +31,11 @@ targets:
     info:
       path: Config/Info.plist
       properties:
-        CFBundleDisplayName: Lose Weight
+        CFBundleDisplayName: Sensible
         ITSAppUsesNonExemptEncryption: false
         LSApplicationCategoryType: public.app-category.healthcare-fitness
-        NSHealthShareUsageDescription: Lose Weight reads your workouts and weigh-ins so you don't have to enter them twice.
-        NSHealthUpdateUsageDescription: Lose Weight saves the weights you log to Apple Health.
+        NSHealthShareUsageDescription: Sensible reads your workouts and weigh-ins so you don't have to enter them twice.
+        NSHealthUpdateUsageDescription: Sensible saves the weights you log to Apple Health.
         UILaunchScreen: {}
         UIBackgroundModes: [remote-notification]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]

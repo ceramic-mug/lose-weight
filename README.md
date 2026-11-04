@@ -1,4 +1,6 @@
-# Lose Weight
+# Sensible
+
+*Weight loss, the sensible way.*
 
 **Website:** https://ceramic-mug.github.io/lose-weight/
 
@@ -68,4 +70,4 @@ Or run them in Xcode with **Product › Test**.
 
 ---
 
-Lose Weight offers general guidance and is not a medical device. Talk to your doctor or a registered dietitian about your own needs.
+Sensible offers general guidance and is not a medical device. Talk to your doctor or a registered dietitian about your own needs.

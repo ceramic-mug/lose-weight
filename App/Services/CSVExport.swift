@@ -14,7 +14,7 @@ struct CSVExport: Transferable {
 
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .commaSeparatedText) { export in
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent("lose-weight-export.csv")
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("sensible-export.csv")
             try export.text.write(to: url, atomically: true, encoding: .utf8)
             return SentTransferredFile(url)
         }
