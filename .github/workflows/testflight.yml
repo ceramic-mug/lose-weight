@@ -8,7 +8,7 @@ on:
 
 jobs:
   upload:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 60
     env:
       BUNDLE_ID: ${{ secrets.BUNDLE_ID || 'com.ceramicmug.loseweight' }}
@@ -18,6 +18,14 @@ jobs:
       ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Use the newest Xcode 26
+        run: |
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1)
+          [ -z "$X" ] && X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$X" ]; then echo "::error::No Xcode 26 on this runner"; ls /Applications; exit 1; fi
+          sudo xcode-select -s "$X"
+          xcodebuild -version
 
       - name: Check secrets
         run: |
