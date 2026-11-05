@@ -27,6 +27,11 @@ Add them under **Settings › Secrets and variables › Actions** on the GitHub 
 
 TestFlight builds store data on the phone only. iCloud sync between iPhone and Mac is off until an iCloud container is set up.
 
+## Mac app
+The same workflow also uploads the Mac app. **Run workflow** asks which to upload: **both** (the default), **ios** or **macos**. The Mac job runs after the iPhone one.
+
+One-time step: in App Store Connect, open the app and add **macOS** as a platform. After that, Mac builds appear in the **TestFlight** app for Mac.
+
 ## If a step fails
 - **Check secrets:** a secret is missing or misnamed.
 - **Apple setup:** the message says what to fix. Usually it's the key's role (it must be Admin) or a missing app record.

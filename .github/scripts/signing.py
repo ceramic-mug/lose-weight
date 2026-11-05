@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Temporary App Store signing for one CI run, using the App Store Connect API key.
 
-  signing.py create   → makes a distribution certificate + App Store profile, installs both,
+  signing.py create [ios|mac] → makes the certificates + App Store profile, installs them,
                          and writes their IDs to $GITHUB_ENV
   signing.py cleanup  → revokes that certificate and deletes the profile
 
@@ -40,75 +40,94 @@ def env_out(**kv: str) -> None:
             f.write(f"{k}={v}\n")
 
 
-def create() -> None:
-    bundle_id = os.environ["BUNDLE_ID"]
-
-    # 1. Key pair + certificate signing request.
+def new_certificate(cert_type: str) -> tuple[str, bytes]:
+    """Create a certificate of `cert_type`; returns (id, PKCS#12 bytes with its private key)."""
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     csr = (x509.CertificateSigningRequestBuilder()
            .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, f"Sensible CI {RUN}")]))
            .sign(key, hashes.SHA256()))
-    csr_pem = csr.public_bytes(serialization.Encoding.PEM).decode()
-
-    # 2. Distribution certificate.
     cert = api("POST", "/v1/certificates", {"data": {"type": "certificates", "attributes": {
-        "certificateType": "DISTRIBUTION", "csrContent": csr_pem}}})["data"]
-    env_out(CI_CERT_ID=cert["id"])
+        "certificateType": cert_type,
+        "csrContent": csr.public_bytes(serialization.Encoding.PEM).decode()}}})["data"]
     der = base64.b64decode(cert["attributes"]["certificateContent"])
-    print(f"Created temporary distribution certificate {cert['id']}.")
+    p12 = pkcs12.serialize_key_and_certificates(
+        b"ci", key, x509.load_der_x509_certificate(der), None,
+        serialization.BestAvailableEncryption(KEYCHAIN_PW.encode()))
+    print(f"Created temporary {cert_type} certificate {cert['id']}.")
+    return cert["id"], p12
 
-    # 3. App Store provisioning profile for the bundle ID.
+
+def create(platform: str) -> None:
+    bundle_id = os.environ["BUNDLE_ID"]
+    mac = platform == "mac"
+
+    # 1. Certificates: Apple Distribution, plus the installer certificate the Mac .pkg needs.
+    types = ["DISTRIBUTION"] + (["MAC_INSTALLER_DISTRIBUTION"] if mac else [])
+    certs = []
+    cert_ids: list[str] = []
+    for t in types:
+        cid, p12 = new_certificate(t)
+        cert_ids.append(cid)
+        env_out(CI_CERT_IDS=",".join(cert_ids))  # saved as we go so cleanup always sees them
+        certs.append(p12)
+
+    # 2. App Store provisioning profile for the bundle ID (signed with the distribution cert).
     found = api("GET", f"/v1/bundleIds?filter[identifier]={bundle_id}")["data"]
     bid = next(b for b in found if b["attributes"]["identifier"] == bundle_id)
-    name = f"Sensible CI {RUN}"
+    name = f"Sensible CI {RUN} {platform}"
     profile = api("POST", "/v1/profiles", {"data": {
         "type": "profiles",
-        "attributes": {"name": name, "profileType": "IOS_APP_STORE"},
+        "attributes": {"name": name, "profileType": "MAC_APP_STORE" if mac else "IOS_APP_STORE"},
         "relationships": {
             "bundleId": {"data": {"type": "bundleIds", "id": bid["id"]}},
-            "certificates": {"data": [{"type": "certificates", "id": cert["id"]}]},
+            "certificates": {"data": [{"type": "certificates", "id": cert_ids[0]}]},
         },
     }})["data"]
     env_out(CI_PROFILE_ID=profile["id"], CI_PROFILE_NAME=name)
     content = base64.b64decode(profile["attributes"]["profileContent"])
     uuid = profile["attributes"]["uuid"]
-    profiles_dir = Path.home() / "Library/MobileDevice/Provisioning Profiles"
-    profiles_dir.mkdir(parents=True, exist_ok=True)
-    (profiles_dir / f"{uuid}.mobileprovision").write_bytes(content)
+    ext = "provisionprofile" if mac else "mobileprovision"
+    # Older and newer Xcode versions look in different places; install to both.
+    for d in [Path.home() / "Library/MobileDevice/Provisioning Profiles",
+              Path.home() / "Library/Developer/Xcode/UserData/Provisioning Profiles"]:
+        d.mkdir(parents=True, exist_ok=True)
+        (d / f"{uuid}.{ext}").write_bytes(content)
     print(f"Created and installed profile '{name}'.")
 
-    # 4. Put the identity in a throwaway keychain codesign can use.
-    p12 = TMP / "signing.p12"
-    p12.write_bytes(pkcs12.serialize_key_and_certificates(
-        b"ci", key, x509.load_der_x509_certificate(der), None,
-        serialization.BestAvailableEncryption(KEYCHAIN_PW.encode())))
+    # 3. Put the identities in a throwaway keychain codesign can use.
     sh("security", "create-keychain", "-p", KEYCHAIN_PW, str(KEYCHAIN))
     sh("security", "set-keychain-settings", "-lut", "21600", str(KEYCHAIN))
     sh("security", "unlock-keychain", "-p", KEYCHAIN_PW, str(KEYCHAIN))
-    sh("security", "import", str(p12), "-k", str(KEYCHAIN), "-P", KEYCHAIN_PW, "-A",
-       "-t", "cert", "-f", "pkcs12")
-    sh("security", "set-key-partition-list", "-S", "apple-tool:,apple:,codesign:", "-s",
+    for i, data in enumerate(certs):
+        p12 = TMP / f"signing-{i}.p12"
+        p12.write_bytes(data)
+        sh("security", "import", str(p12), "-k", str(KEYCHAIN), "-P", KEYCHAIN_PW, "-A",
+           "-t", "cert", "-f", "pkcs12")
+        p12.unlink()
+    sh("security", "set-key-partition-list", "-S", "apple-tool:,apple:,codesign:,productbuild:", "-s",
        "-k", KEYCHAIN_PW, str(KEYCHAIN))
     existing = subprocess.run(["security", "list-keychains", "-d", "user"], capture_output=True, text=True).stdout
     keychains = [k.strip().strip('"') for k in existing.split()]
     sh("security", "list-keychains", "-d", "user", "-s", str(KEYCHAIN), *keychains)
-    p12.unlink()
 
-    # 5. Export options for manual signing with this profile.
+    # 4. Export options for manual signing with this profile.
+    options = {
+        "method": "app-store-connect",
+        "destination": "upload",
+        "teamID": os.environ["TEAM_ID"],
+        "signingStyle": "manual",
+        "signingCertificate": "Apple Distribution",
+        "provisioningProfiles": {bundle_id: name},
+    }
+    if mac:
+        options["installerSigningCertificate"] = "3rd Party Mac Developer Installer"
     with open(TMP / "ExportOptions.plist", "wb") as f:
-        plistlib.dump({
-            "method": "app-store-connect",
-            "destination": "upload",
-            "teamID": os.environ["TEAM_ID"],
-            "signingStyle": "manual",
-            "signingCertificate": "Apple Distribution",
-            "provisioningProfiles": {bundle_id: name},
-        }, f)
+        plistlib.dump(options, f)
     print("Signing ready.")
 
 
 def cleanup() -> None:
-    cert_id = os.environ.get("CI_CERT_ID")
+    cert_ids = [c for c in os.environ.get("CI_CERT_IDS", os.environ.get("CI_CERT_ID", "")).split(",") if c]
     profile_id = os.environ.get("CI_PROFILE_ID")
     if profile_id:
         try:
@@ -116,14 +135,17 @@ def cleanup() -> None:
             print("Deleted temporary profile.")
         except SystemExit:
             pass
-    if cert_id:
+    for cert_id in cert_ids:
         try:
             api("DELETE", f"/v1/certificates/{cert_id}")
-            print("Revoked temporary certificate.")
+            print(f"Revoked temporary certificate {cert_id}.")
         except SystemExit:
             pass
     subprocess.run(["security", "delete-keychain", str(KEYCHAIN)])
 
 
 if __name__ == "__main__":
-    {"create": create, "cleanup": cleanup}[sys.argv[1]]()
+    if sys.argv[1] == "create":
+        create(sys.argv[2] if len(sys.argv) > 2 else "ios")
+    else:
+        cleanup()

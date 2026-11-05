@@ -1,13 +1,21 @@
-# Builds the iPhone app on a cloud Mac and uploads it to TestFlight.
+# Builds the iPhone and Mac apps on a cloud Mac and uploads them to TestFlight.
 # Start it from the Actions tab (or the GitHub app): TestFlight › Run workflow.
 # One-time setup is described in docs/TESTFLIGHT.md.
 name: TestFlight
 
 on:
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Which app to upload
+        type: choice
+        options: [both, ios, macos]
+        default: both
 
 jobs:
   upload:
+    name: iPhone
+    if: ${{ inputs.platform != 'macos' }}
     runs-on: macos-26
     timeout-minutes: 60
     env:
@@ -71,7 +79,7 @@ jobs:
             CURRENT_PROJECT_VERSION="${{ github.run_number }}"
 
       - name: Temporary distribution certificate and profile
-        run: '"$RUNNER_TEMP/venv/bin/python" .github/scripts/signing.py create'
+        run: '"$RUNNER_TEMP/venv/bin/python" .github/scripts/signing.py create ios'
 
       - name: Upload to TestFlight
         run: |
@@ -84,6 +92,107 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
 
       - name: Revoke temporary certificate
+        if: always()
+        run: |
+          if [ -x "$RUNNER_TEMP/venv/bin/python" ] && [ -f "$KEY_PATH" ]; then
+            "$RUNNER_TEMP/venv/bin/python" .github/scripts/signing.py cleanup
+          fi
+
+      - name: Remove API key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"
+
+  mac:
+    name: Mac
+    # After the iPhone job, so the two never hold temporary certificates at the same time.
+    needs: upload
+    if: ${{ always() && inputs.platform != 'ios' }}
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      BUNDLE_ID: ${{ secrets.BUNDLE_ID || 'com.ceramicmug.loseweight' }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use the newest Xcode 26
+        run: |
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1)
+          [ -z "$X" ] && X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$X" ]; then echo "::error::No Xcode 26 on this runner"; ls /Applications; exit 1; fi
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+
+      - name: Check secrets
+        run: |
+          missing=0
+          for v in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            if [ -z "${!v}" ]; then echo "::error::Missing secret for $v (see docs/TESTFLIGHT.md)"; missing=1; fi
+          done
+          exit $missing
+
+      - name: Use bundle ID ${{ env.BUNDLE_ID }}
+        run: grep -rl "com.ceramicmug.loseweight" project.yml Config | xargs sed -i '' "s/com\.ceramicmug\.loseweight/${BUNDLE_ID}/g"
+
+      - name: Install API key
+        run: |
+          mkdir -p "$RUNNER_TEMP/keys"
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8"
+          echo "KEY_PATH=$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8" >> "$GITHUB_ENV"
+
+      - name: Apple setup (app ID, Team ID, app record)
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet pyjwt cryptography pyyaml
+          "$RUNNER_TEMP/venv/bin/python" .github/scripts/asc_setup.py
+
+      - name: Temporary certificates and Mac App Store profile
+        run: '"$RUNNER_TEMP/venv/bin/python" .github/scripts/signing.py create mac'
+
+      # Manual signing goes on the app target only; putting it on the command line would
+      # also apply to the Swift package, which can't take a provisioning profile.
+      - name: Sign the app target with the profile
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" - <<'PY'
+          import os, yaml
+          spec = yaml.safe_load(open("project.yml"))
+          spec["targets"]["LoseWeight"]["settings"]["base"].update({
+              "DEVELOPMENT_TEAM": os.environ["TEAM_ID"],
+              "CODE_SIGN_STYLE": "Manual",
+              "CODE_SIGN_IDENTITY[sdk=macosx*]": "Apple Distribution",
+              "PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]": os.environ["CI_PROFILE_NAME"],
+              "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": "Config/LoseWeight-macOS-TestFlight.entitlements",
+          })
+          yaml.safe_dump(spec, open("project.yml", "w"), sort_keys=False)
+          PY
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen
+
+      - name: Archive
+        run: |
+          xcodebuild archive -quiet \
+            -project LoseWeight.xcodeproj -scheme LoseWeight \
+            -destination 'generic/platform=macOS' \
+            -archivePath "$RUNNER_TEMP/LoseWeight-mac.xcarchive" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}"
+
+      - name: Upload to TestFlight
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/LoseWeight-mac.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -authenticationKeyPath "$KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      - name: Revoke temporary certificates
         if: always()
         run: |
           if [ -x "$RUNNER_TEMP/venv/bin/python" ] && [ -f "$KEY_PATH" ]; then
