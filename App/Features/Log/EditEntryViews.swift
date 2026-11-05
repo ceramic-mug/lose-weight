@@ -155,3 +155,69 @@ struct EditExerciseView: View {
         #endif
     }
 }
+
+/// Edit or delete a past weigh-in. Readings imported from Apple Health can only be deleted.
+struct EditWeightView: View {
+    let entry: WeightEntry
+    let units: UnitSystem
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
+
+    @State private var kg: Double
+    @State private var date: Date
+
+    init(entry: WeightEntry, units: UnitSystem) {
+        self.entry = entry
+        self.units = units
+        _kg = State(initialValue: entry.kg)
+        _date = State(initialValue: entry.timestamp)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                if entry.isImported {
+                    Section {
+                        LabeledContent("Weight", value: units.formatWeight(entry.kg))
+                        LabeledContent("Date", value: entry.timestamp.formatted(date: .abbreviated, time: .shortened))
+                    } footer: {
+                        Text("From Apple Health")
+                    }
+                } else {
+                    Section {
+                        WeightWheel(kg: $kg, units: units)
+                        DatePicker("Date", selection: $date, in: ...Date.now, displayedComponents: [.date, .hourAndMinute])
+                    }
+                }
+                Section {
+                    Button("Delete", role: .destructive) {
+                        context.delete(entry)
+                        dismiss()
+                    }
+                }
+            }
+            .formStyle(.grouped)
+            .navigationTitle("Edit weight")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                if !entry.isImported {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            entry.kg = kg
+                            entry.timestamp = date
+                            dismiss()
+                        }
+                        .fontWeight(.semibold)
+                    }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 420, minHeight: 380)
+        #endif
+    }
+}

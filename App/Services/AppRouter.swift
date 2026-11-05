@@ -9,12 +9,13 @@ final class AppRouter {
     }
 
     enum Section: String, CaseIterable, Identifiable, Hashable {
-        case today, trends, insights, settings
+        case today, history, trends, insights, settings
         var id: String { rawValue }
 
         var title: String {
             switch self {
             case .today: "Today"
+            case .history: "History"
             case .trends: "Trends"
             case .insights: "Insights"
             case .settings: "Settings"
@@ -24,6 +25,7 @@ final class AppRouter {
         var systemImage: String {
             switch self {
             case .today: "sun.max"
+            case .history: "clock.arrow.circlepath"
             case .trends: "chart.xyaxis.line"
             case .insights: "checklist"
             case .settings: "gearshape"

@@ -78,6 +78,7 @@ struct MainView: View {
     private func screen(for section: AppRouter.Section) -> some View {
         switch section {
         case .today: TodayView(profile: profile)
+        case .history: HistoryView(profile: profile)
         case .trends: TrendsView(profile: profile)
         case .insights: InsightsView(profile: profile)
         case .settings: SettingsView(profile: profile)

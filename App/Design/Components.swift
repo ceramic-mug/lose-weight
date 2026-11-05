@@ -228,3 +228,62 @@ enum Format {
         x.formatted(.percent.precision(.fractionLength(0)))
     }
 }
+
+// MARK: - Log row
+
+/// One logged entry: used on Today and in History.
+struct LogRow: View {
+    let icon: String
+    let title: String
+    let detail: String
+    var dot: Healthiness?
+    let time: Date
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .frame(width: 28)
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.subheadline.weight(.medium))
+                Text(detail).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if let dot { TierDot(healthiness: dot) }
+            Text(time, format: .dateTime.hour().minute())
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+        }
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
+    }
+}
+
+extension FoodEntry {
+    func row(showNumbers: Bool) -> LogRow {
+        LogRow(icon: category.systemImage,
+               title: category.displayName,
+               detail: "\(healthiness.displayName) · \(portion.displayName)" + (showNumbers ? " · \(Format.kcalRange(calories))" : ""),
+               dot: healthiness,
+               time: timestamp)
+    }
+}
+
+extension ExerciseEntry {
+    var row: LogRow {
+        LogRow(icon: type.systemImage,
+               title: type.displayName,
+               detail: "\(Format.minutes(minutes)) · \(intensity.displayName)" + (isFromHealth ? " · Health" : ""),
+               time: timestamp)
+    }
+}
+
+extension WeightEntry {
+    func row(units: UnitSystem) -> LogRow {
+        LogRow(icon: "scalemass",
+               title: units.formatWeight(kg),
+               detail: isImported ? "Apple Health" : "Weigh-in",
+               time: timestamp)
+    }
+}

@@ -214,12 +214,17 @@ struct TodayLogCard: View {
     let showNumbers: Bool
     let weightKg: Double
     @Environment(\.modelContext) private var context
+    @Environment(AppRouter.self) private var router
     @State private var editingFood: FoodEntry?
     @State private var editingExercise: ExerciseEntry?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            CardHeader(title: "Logged", systemImage: "list.bullet")
+            HStack {
+                CardHeader(title: "Logged", systemImage: "list.bullet")
+                Button("See all") { router.section = .history }
+                    .font(.subheadline)
+            }
             if foods.isEmpty && exercises.isEmpty {
                 EmptyHint(text: "Nothing logged today")
             }
@@ -228,24 +233,14 @@ struct TodayLogCard: View {
                 if !items.isEmpty {
                     Text(slot.displayName).font(.caption.weight(.semibold)).foregroundStyle(.secondary).padding(.top, 4)
                     ForEach(items) { item in
-                        row(icon: item.category.systemImage,
-                            title: item.category.displayName,
-                            detail: "\(item.healthiness.displayName) · \(item.portion.displayName)" + (showNumbers ? " · \(Format.kcalRange(item.calories))" : ""),
-                            dot: item.healthiness,
-                            time: item.timestamp,
-                            onTap: { editingFood = item }) { context.delete(item) }
+                        row(item.row(showNumbers: showNumbers), onTap: { editingFood = item }) { context.delete(item) }
                     }
                 }
             }
             if !exercises.isEmpty {
                 Text("Exercise").font(.caption.weight(.semibold)).foregroundStyle(.secondary).padding(.top, 4)
-                ForEach(exercises) { item in
-                    row(icon: item.type.systemImage,
-                        title: item.type.displayName,
-                        detail: "\(Format.minutes(item.minutes)) · \(item.intensity.displayName)" + (item.isFromHealth ? " · Health" : ""),
-                        dot: nil,
-                        time: item.timestamp,
-                        onTap: { editingExercise = item }) { context.delete(item) }
+                ForEach(exercises.sorted { $0.timestamp < $1.timestamp }) { item in
+                    row(item.row, onTap: { editingExercise = item }) { context.delete(item) }
                 }
             }
         }
@@ -254,31 +249,12 @@ struct TodayLogCard: View {
         .sheet(item: $editingExercise) { EditExerciseView(entry: $0, weightKg: weightKg) }
     }
 
-    private func row(icon: String, title: String, detail: String, dot: Healthiness?, time: Date,
-                     onTap: @escaping () -> Void, onDelete: @escaping () -> Void) -> some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .frame(width: 28)
-                    .foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(title).font(.subheadline.weight(.medium))
-                    Text(detail).font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-                if let dot { TierDot(healthiness: dot) }
-                Text(time, format: .dateTime.hour().minute())
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
+    private func row(_ content: LogRow, onTap: @escaping () -> Void, onDelete: @escaping () -> Void) -> some View {
+        Button(action: onTap) { content }
+            .buttonStyle(.plain)
+            .contextMenu {
+                Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)
             }
-            .padding(.vertical, 4)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .contextMenu {
-            Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)
-        }
     }
 }
 
