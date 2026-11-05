@@ -86,6 +86,7 @@ struct SettingsView: View {
             }
 
             Section("Your data") {
+                LabeledContent("Sync", value: AppContainer.isCloudSynced ? "iCloud" : "This device only")
                 ShareLink(item: CSVExport(foods: foods, drinks: drinks, exercises: exercises, weights: weights),
                           preview: SharePreview("Sensible export.csv")) {
                     Label("Export as CSV", systemImage: "square.and.arrow.up")

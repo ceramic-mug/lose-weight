@@ -25,7 +25,9 @@ Add them under **Settings › Secrets and variables › Actions** on the GitHub 
 3. When the run is green, open **TestFlight** in App Store Connect. The first time, add yourself to an **Internal Testing** group.
 4. Install the **TestFlight** app on your iPhone and install Lose Weight from it. Later builds update automatically.
 
-TestFlight builds store data on the phone only. iCloud sync between iPhone and Mac is off until an iCloud container is set up.
+TestFlight builds sync between iPhone and Mac through iCloud (container `iCloud.com.ceramicmug.loseweight`, CloudKit **Development** environment). Settings › Your data › Sync shows whether this device is syncing.
+
+Before an App Store release: open CloudKit Console (icloud.developer.apple.com), choose the container, and click **Deploy Schema Changes** to copy the database setup to Production. Then switch `iCloudContainerEnvironment` in `.github/scripts/signing.py` and the TestFlight entitlements to Production.
 
 ## Mac app
 The same workflow also uploads the Mac app. **Run workflow** asks which to upload: **both** (the default), **ios** or **macos**. The Mac job runs after the iPhone one.

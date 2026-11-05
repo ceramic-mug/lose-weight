@@ -118,6 +118,8 @@ def create(platform: str) -> None:
         "signingStyle": "manual",
         "signingCertificate": "Apple Distribution",
         "provisioningProfiles": {bundle_id: name},
+        # Matches the TestFlight entitlements; switch to Production after deploying the schema.
+        "iCloudContainerEnvironment": "Development",
     }
     if mac:
         options["installerSigningCertificate"] = "3rd Party Mac Developer Installer"

@@ -2,6 +2,9 @@ import Foundation
 import SwiftData
 
 enum AppContainer {
+    /// Whether this launch is syncing through iCloud (shown in Settings).
+    @MainActor static private(set) var isCloudSynced = false
+
     static let schema = Schema([
         FoodEntry.self,
         DrinkEntry.self,
@@ -17,6 +20,7 @@ enum AppContainer {
         if !inMemory {
             let cloud = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
             if let container = try? ModelContainer(for: schema, configurations: cloud) {
+                isCloudSynced = FileManager.default.ubiquityIdentityToken != nil
                 return container
             }
         }
