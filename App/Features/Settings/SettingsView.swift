@@ -142,12 +142,17 @@ struct SettingsView: View {
         }
     }
 
+    /// Deletes object by object: bulk deletes aren't mirrored to iCloud, so the data
+    /// would come back from the cloud.
     private func deleteAll() {
-        try? context.delete(model: FoodEntry.self)
-        try? context.delete(model: DrinkEntry.self)
-        try? context.delete(model: ExerciseEntry.self)
-        try? context.delete(model: WeightEntry.self)
-        try? context.delete(model: UserProfile.self)
+        func wipe<T: PersistentModel>(_ type: T.Type) {
+            for item in (try? context.fetch(FetchDescriptor<T>())) ?? [] { context.delete(item) }
+        }
+        wipe(FoodEntry.self)
+        wipe(DrinkEntry.self)
+        wipe(ExerciseEntry.self)
+        wipe(WeightEntry.self)
+        wipe(UserProfile.self)
         try? context.save()
         ReminderService.cancel()
     }

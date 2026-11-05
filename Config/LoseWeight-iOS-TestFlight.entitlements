@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<!-- TestFlight builds: HealthKit + iCloud sync (CloudKit Development environment until
-     the schema is deployed to Production in CloudKit Console). -->
+<!-- TestFlight builds: iCloud sync uses the Production CloudKit environment (App Store
+     exports allow no other). Sync starts once the schema is deployed in CloudKit Console. -->
 <dict>
 	<key>aps-environment</key>
 	<string>production</string>
@@ -11,7 +11,7 @@
 	<key>com.apple.developer.healthkit.access</key>
 	<array/>
 	<key>com.apple.developer.icloud-container-environment</key>
-	<string>Development</string>
+	<string>Production</string>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
 		<string>iCloud.com.ceramicmug.loseweight</string>
