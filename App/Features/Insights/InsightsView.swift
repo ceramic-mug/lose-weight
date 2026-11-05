@@ -33,6 +33,7 @@ struct InsightsView: View {
     let profile: UserProfile
 
     @Query(sort: \FoodEntry.timestamp) private var foods: [FoodEntry]
+    @Query(sort: \DrinkEntry.timestamp) private var drinks: [DrinkEntry]
     @Query(sort: \ExerciseEntry.timestamp) private var exercises: [ExerciseEntry]
     @Query(sort: \WeightEntry.timestamp) private var weights: [WeightEntry]
     @State private var period: AuditPeriod = .thisWeek
@@ -42,7 +43,7 @@ struct InsightsView: View {
     var body: some View {
         let snap = Snapshot(profile: profile, weights: weights)
         let interval = period.interval
-        let report = snap.report(start: interval.start, end: interval.end, foods: foods, exercises: exercises, weights: weights)
+        let report = snap.report(start: interval.start, end: interval.end, foods: foods, drinks: drinks, exercises: exercises, weights: weights)
         let units = profile.units
 
         ScrollView {
@@ -72,13 +73,19 @@ struct InsightsView: View {
                              value: "\(report.strengthDays)",
                              caption: report.days > 7 ? "days in \(report.days) · goal 2 a week" : "of 2 this week",
                              systemImage: "dumbbell", tint: Theme.exercise)
+                    if let mg = report.avgCaffeineMg {
+                        StatTile(title: "Caffeine",
+                                 value: "\(Int(mg.rounded())) mg",
+                                 caption: "a day · limit 400",
+                                 systemImage: "cup.and.saucer.fill", tint: Theme.drink)
+                    }
                     StatTile(title: "Trend weight",
                              value: report.trendChangeKg.map { units.formatWeightChange($0) } ?? "—",
                              caption: report.kgPerWeek.map { "\(units.formatWeightChange($0))/wk" },
                              systemImage: "scalemass", tint: Theme.weight)
                     StatTile(title: "Days logged",
                              value: "\(report.daysWithAnyLog) / \(report.days)",
-                             caption: "\(snap.streak(foods: foods, exercises: exercises, weights: weights))-day streak",
+                             caption: "\(snap.streak(foods: foods, drinks: drinks, exercises: exercises, weights: weights))-day streak",
                              systemImage: "checkmark.circle", tint: Theme.accent)
                 }
 

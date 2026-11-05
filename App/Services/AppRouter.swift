@@ -4,7 +4,7 @@ import SwiftUI
 @Observable
 final class AppRouter {
     enum Sheet: String, Identifiable {
-        case food, exercise, weight
+        case food, drink, exercise, weight
         var id: String { rawValue }
     }
 

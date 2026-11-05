@@ -3,13 +3,14 @@ import LoseWeightCore
 
 /// The one place for explanations, so every other screen can stay short.
 enum ExplainTopic: String, CaseIterable, Identifiable {
-    case food, portions, effort, budget, trend, reportCard, goals, health, safety, sources
+    case food, portions, drinks, effort, budget, trend, reportCard, goals, health, safety, sources
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .food: "Healthiness levels"
         case .portions: "Portions"
+        case .drinks: "Drinks and caffeine"
         case .effort: "Exercise effort"
         case .budget: "Daily food budget"
         case .trend: "Weight trend"
@@ -35,6 +36,17 @@ struct ExplainView: View {
                 section(.portions) {
                     ForEach(Portion.allCases) { p in
                         row(p.displayName, "\(p.hint). Counted as \(Format.percent(p.multiplier)) of a regular serving.")
+                    }
+                }
+                section(.drinks) {
+                    Text("Pick the drink and its size. Caffeine and calories are typical amounts for that drink, so a homemade cup may differ a little.")
+                    Text("Up to 400 mg of caffeine a day is generally safe for healthy adults (FDA). That's about four cups of brewed coffee. Caffeine after 2 pm can affect sleep.")
+                    Text("Drink calories count toward your food budget. Sweet drinks — soda, flavored lattes, juice, energy drinks, cocktails — count toward the sweet drinks tip.")
+                    DisclosureGroup("Caffeine by drink (medium)") {
+                        ForEach(DrinkStyle.allCases.filter { $0.spec.mg[1] > 0 }) { s in
+                            LabeledContent(s.displayName, value: "\(Int(s.spec.mg[1])) mg")
+                                .font(.footnote)
+                        }
                     }
                 }
                 section(.effort) {
@@ -136,6 +148,8 @@ struct ExplainView: View {
         "Dietary Guidelines for Americans, 2020–2025.",
         "U.S. HHS. Physical Activity Guidelines for Americans, 2nd edition, 2018.",
         "Herrmann SD et al. 2024 Adult Compendium of Physical Activities.",
+        "U.S. FDA. Spilling the Beans: How Much Caffeine Is Too Much?",
+        "USDA FoodData Central (caffeine and energy for beverages).",
     ]
 }
 

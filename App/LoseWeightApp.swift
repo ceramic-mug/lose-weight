@@ -22,10 +22,12 @@ struct LoseWeightApp: App {
             CommandMenu("Log") {
                 Button("Log Food…") { router.sheet = .food }
                     .keyboardShortcut("1", modifiers: .command)
-                Button("Log Exercise…") { router.sheet = .exercise }
+                Button("Log Drink…") { router.sheet = .drink }
                     .keyboardShortcut("2", modifiers: .command)
-                Button("Log Weight…") { router.sheet = .weight }
+                Button("Log Exercise…") { router.sheet = .exercise }
                     .keyboardShortcut("3", modifiers: .command)
+                Button("Log Weight…") { router.sheet = .weight }
+                    .keyboardShortcut("4", modifiers: .command)
             }
         }
     }

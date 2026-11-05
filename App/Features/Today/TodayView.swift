@@ -13,6 +13,7 @@ struct TodayView: View {
     #endif
 
     @Query(sort: \FoodEntry.timestamp, order: .reverse) private var foods: [FoodEntry]
+    @Query(sort: \DrinkEntry.timestamp, order: .reverse) private var drinks: [DrinkEntry]
     @Query(sort: \ExerciseEntry.timestamp, order: .reverse) private var exercises: [ExerciseEntry]
     @Query(sort: \WeightEntry.timestamp) private var weights: [WeightEntry]
 
@@ -20,7 +21,8 @@ struct TodayView: View {
 
     var body: some View {
         let snap = snapshot
-        let budget = snap.dayBudget(foods: foods, exercises: exercises)
+        let budget = snap.dayBudget(foods: foods, drinks: drinks, exercises: exercises)
+        let todaysDrinks = drinks.filter { Calendar.current.isDateInToday($0.timestamp) }
         ScrollView {
             VStack(spacing: Theme.spacing) {
                 quickLog
@@ -28,22 +30,25 @@ struct TodayView: View {
                     HStack(alignment: .top, spacing: Theme.spacing) {
                         BudgetCard(budget: budget, showNumbers: profile.showCalorieNumbers)
                         VStack(spacing: Theme.spacing) {
+                            DrinksCard(drinks: todaysDrinks)
                             ActivityCard(exercises: exercises)
                             WeightCard(snapshot: snap)
                         }
                     }
                 } else {
                     BudgetCard(budget: budget, showNumbers: profile.showCalorieNumbers)
+                    DrinksCard(drinks: todaysDrinks)
                     ActivityCard(exercises: exercises)
                     WeightCard(snapshot: snap)
                 }
                 TodayLogCard(
                     foods: foods.filter { Calendar.current.isDateInToday($0.timestamp) },
+                    drinks: todaysDrinks,
                     exercises: exercises.filter { Calendar.current.isDateInToday($0.timestamp) },
                     showNumbers: profile.showCalorieNumbers,
                     weightKg: snap.weightForExerciseKg
                 )
-                streakFooter(snap.streak(foods: foods, exercises: exercises, weights: weights))
+                streakFooter(snap.streak(foods: foods, drinks: drinks, exercises: exercises, weights: weights))
             }
             .padding()
             .frame(maxWidth: 980)
@@ -63,8 +68,9 @@ struct TodayView: View {
     }
 
     private var quickLog: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             QuickLogButton(title: "Food", systemImage: "fork.knife", tint: Theme.food) { router.sheet = .food }
+            QuickLogButton(title: "Drink", systemImage: "cup.and.saucer.fill", tint: Theme.drink) { router.sheet = .drink }
             QuickLogButton(title: "Exercise", systemImage: "figure.walk", tint: Theme.exercise) { router.sheet = .exercise }
             QuickLogButton(title: "Weight", systemImage: "scalemass", tint: Theme.weight) { router.sheet = .weight }
         }
@@ -164,6 +170,37 @@ struct ActivityCard: View {
     }
 }
 
+// MARK: - Drinks
+
+struct DrinksCard: View {
+    let drinks: [DrinkEntry]
+
+    var body: some View {
+        let caffeine = drinks.reduce(0) { $0 + $1.caffeineMg }
+        let waterMl = drinks.filter { $0.kind == .water }.reduce(0) { $0 + $1.ml }
+        let glasses = Int((waterMl / DrinkMath.glassMl).rounded())
+        let limit = DrinkMath.caffeineDailyLimitMg
+        let over = caffeine > limit
+
+        VStack(alignment: .leading, spacing: 12) {
+            CardHeader(title: "Drinks", systemImage: "cup.and.saucer.fill", tint: Theme.drink,
+                       trailing: drinks.isEmpty ? nil : "\(drinks.count) today")
+            HStack(alignment: .firstTextBaseline) {
+                Text("\(Int(caffeine)) mg")
+                    .font(.title3.weight(.semibold))
+                    .monospacedDigit()
+                Text("caffeine").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Label("\(glasses) glass\(glasses == 1 ? "" : "es")", systemImage: "drop.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            GoalBar(value: caffeine, goal: limit, tint: over ? Theme.balanced : Theme.drink, height: 6)
+        }
+        .card()
+    }
+}
+
 // MARK: - Weight
 
 struct WeightCard: View {
@@ -210,6 +247,7 @@ struct WeightCard: View {
 
 struct TodayLogCard: View {
     let foods: [FoodEntry]
+    let drinks: [DrinkEntry]
     let exercises: [ExerciseEntry]
     let showNumbers: Bool
     let weightKg: Double
@@ -217,6 +255,7 @@ struct TodayLogCard: View {
     @Environment(AppRouter.self) private var router
     @State private var editingFood: FoodEntry?
     @State private var editingExercise: ExerciseEntry?
+    @State private var editingDrink: DrinkEntry?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -225,7 +264,7 @@ struct TodayLogCard: View {
                 Button("See all") { router.section = .history }
                     .font(.subheadline)
             }
-            if foods.isEmpty && exercises.isEmpty {
+            if foods.isEmpty && drinks.isEmpty && exercises.isEmpty {
                 EmptyHint(text: "Nothing logged today")
             }
             ForEach(MealSlot.allCases) { slot in
@@ -235,6 +274,12 @@ struct TodayLogCard: View {
                     ForEach(items) { item in
                         row(item.row(showNumbers: showNumbers), onTap: { editingFood = item }) { context.delete(item) }
                     }
+                }
+            }
+            if !drinks.isEmpty {
+                Text("Drinks").font(.caption.weight(.semibold)).foregroundStyle(.secondary).padding(.top, 4)
+                ForEach(drinks.sorted { $0.timestamp < $1.timestamp }) { item in
+                    row(item.row(showNumbers: showNumbers), onTap: { editingDrink = item }) { context.delete(item) }
                 }
             }
             if !exercises.isEmpty {
@@ -247,6 +292,7 @@ struct TodayLogCard: View {
         .card()
         .sheet(item: $editingFood) { EditFoodView(entry: $0) }
         .sheet(item: $editingExercise) { EditExerciseView(entry: $0, weightKg: weightKg) }
+        .sheet(item: $editingDrink) { EditDrinkView(entry: $0) }
     }
 
     private func row(_ content: LogRow, onTap: @escaping () -> Void, onDelete: @escaping () -> Void) -> some View {

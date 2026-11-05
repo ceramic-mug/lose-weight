@@ -8,6 +8,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var context
     @Environment(HealthKitService.self) private var health
     @Query private var foods: [FoodEntry]
+    @Query private var drinks: [DrinkEntry]
     @Query private var exercises: [ExerciseEntry]
     @Query(sort: \WeightEntry.timestamp) private var weights: [WeightEntry]
 
@@ -85,7 +86,7 @@ struct SettingsView: View {
             }
 
             Section("Your data") {
-                ShareLink(item: CSVExport(foods: foods, exercises: exercises, weights: weights),
+                ShareLink(item: CSVExport(foods: foods, drinks: drinks, exercises: exercises, weights: weights),
                           preview: SharePreview("Sensible export.csv")) {
                     Label("Export as CSV", systemImage: "square.and.arrow.up")
                 }
@@ -142,6 +143,7 @@ struct SettingsView: View {
 
     private func deleteAll() {
         try? context.delete(model: FoodEntry.self)
+        try? context.delete(model: DrinkEntry.self)
         try? context.delete(model: ExerciseEntry.self)
         try? context.delete(model: WeightEntry.self)
         try? context.delete(model: UserProfile.self)

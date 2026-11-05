@@ -133,6 +133,54 @@ final class TrendTests: XCTestCase {
     }
 }
 
+final class DrinkTests: XCTestCase {
+    func testCaffeineTable() {
+        XCTAssertEqual(DrinkLog(date: day(0), style: .latte, size: .medium).caffeineMg, 150)
+        XCTAssertEqual(DrinkLog(date: day(0), style: .espresso, size: .medium).caffeineMg, 126)
+        XCTAssertEqual(DrinkStyle.espresso.sizeName(.medium), "Double")
+        XCTAssertEqual(DrinkLog(date: day(0), style: .water, size: .large).kcal, 0)
+        for style in DrinkStyle.allCases {
+            let s = style.spec
+            XCTAssertEqual(s.ml.count, 3, style.rawValue)
+            XCTAssertEqual(s.mg.count, 3, style.rawValue)
+            XCTAssertEqual(s.kcal.count, 3, style.rawValue)
+            XCTAssertLessThanOrEqual(s.mg[0], s.mg[2], style.rawValue)
+            XCTAssertTrue(style.kind.styles.contains(style))
+        }
+        XCTAssertEqual(DrinkKind.coffee.styles.count, 8)
+    }
+
+    func testCaffeineReportAndTips() {
+        // Three medium cold brews (205 mg each) on day 0, two after 2 pm; a late latte on day 1.
+        let drinks = [
+            DrinkLog(date: day(0, hour: 8), style: .coldBrew, size: .medium),
+            DrinkLog(date: day(0, hour: 14), style: .coldBrew, size: .medium),
+            DrinkLog(date: day(0, hour: 16), style: .coldBrew, size: .medium),
+            DrinkLog(date: day(1, hour: 15), style: .latte, size: .medium),
+        ]
+        let food = [FoodLog(date: day(0, hour: 12), category: .homeCooked, healthiness: .balanced, portion: .regular)]
+        let r = Auditor.report(start: day(0), end: day(1), food: food, drinks: drinks, exercise: [], weights: [],
+                               targetKcal: 2000, currentWeightKg: 80, wantsLoss: true, calendar: utc)
+        XCTAssertEqual(r.highCaffeineDays, 1)
+        XCTAssertEqual(r.lateCaffeineDays, 2)
+        XCTAssertEqual(r.avgCaffeineMg!, (615 + 150) / 2, accuracy: 0.01)
+        XCTAssertEqual(r.drinksLogged, 4)
+        // Drink calories count only on the day with food: 600 + 3 × 5.
+        XCTAssertEqual(r.averageDailyKcal!, 615, accuracy: 0.01)
+        let titles = r.insights.map(\.title)
+        XCTAssertTrue(titles.contains("Caffeine topped 400 mg on 1 day"), "\(titles)")
+        XCTAssertTrue(titles.contains("Caffeine after 2 pm on 2 days"), "\(titles)")
+    }
+
+    func testSweetDrinksTipFromDrinks() {
+        let drinks = (0..<3).map { DrinkLog(date: day(0, hour: 9 + $0), style: .regularSoda, size: .medium) }
+        let r = Auditor.report(start: day(0), end: day(0), food: [], drinks: drinks, exercise: [], weights: [],
+                               targetKcal: 2000, currentWeightKg: 80, wantsLoss: true, calendar: utc)
+        XCTAssertEqual(r.sweetDrinks, 3)
+        XCTAssertTrue(r.insights.contains { $0.title == "Fewer sweet drinks" })
+    }
+}
+
 final class AuditTests: XCTestCase {
     func testWeeklyReport() {
         var food: [FoodLog] = []

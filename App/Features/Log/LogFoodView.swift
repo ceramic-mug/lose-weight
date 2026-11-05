@@ -29,7 +29,8 @@ struct LogFoodView: View {
 
                     StepSection(title: "Where from?") {
                         LazyVGrid(columns: columns, spacing: 10) {
-                            ForEach(FoodCategory.allCases) { c in
+                            // Drinks have their own log now.
+                            ForEach(FoodCategory.allCases.filter { $0 != .drink }) { c in
                                 ChoiceTile(title: c.displayName, systemImage: c.systemImage, tint: Theme.food,
                                            isSelected: category == c) { select(c) }
                             }

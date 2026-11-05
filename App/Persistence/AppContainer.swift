@@ -4,6 +4,7 @@ import SwiftData
 enum AppContainer {
     static let schema = Schema([
         FoodEntry.self,
+        DrinkEntry.self,
         ExerciseEntry.self,
         WeightEntry.self,
         UserProfile.self,

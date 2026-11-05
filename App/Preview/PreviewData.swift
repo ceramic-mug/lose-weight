@@ -79,10 +79,11 @@ enum PreviewData {
                 context.insert(FoodEntry(timestamp: at(15, 30), category: .snack,
                                          healthiness: rng.next() < 0.5 ? .lighter : .indulgent, portion: .regular, meal: .snack))
             }
-            if rng.next() < 0.4 {
-                context.insert(FoodEntry(timestamp: at(10), category: .drink,
-                                         healthiness: rng.next() < 0.5 ? .balanced : .indulgent, portion: .regular, meal: .snack))
-            }
+            context.insert(DrinkEntry(timestamp: at(7, 30), style: .latte, size: .medium))
+            if rng.next() < 0.6 { context.insert(DrinkEntry(timestamp: at(13), style: .blackCoffee, size: .medium)) }
+            if rng.next() < 0.25 { context.insert(DrinkEntry(timestamp: at(15, 30), style: .coldBrew, size: .large)) }
+            for h in [9, 12, 17] where rng.next() < 0.7 { context.insert(DrinkEntry(timestamp: at(h), style: .water, size: .medium)) }
+            if rng.next() < 0.2 { context.insert(DrinkEntry(timestamp: at(19), style: .regularSoda, size: .medium)) }
 
             // Exercise: walks most days, some strength and cycling.
             if rng.next() < 0.45 + progress * 0.3 {

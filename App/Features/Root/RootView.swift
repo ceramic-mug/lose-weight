@@ -34,6 +34,7 @@ struct MainView: View {
                 Group {
                     switch sheet {
                     case .food: LogFoodView(profile: profile)
+                    case .drink: LogDrinkView(profile: profile)
                     case .exercise: LogExerciseView(profile: profile)
                     case .weight: LogWeightView(profile: profile)
                     }

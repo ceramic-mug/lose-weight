@@ -287,3 +287,13 @@ extension WeightEntry {
                time: timestamp)
     }
 }
+
+extension DrinkEntry {
+    func row(showNumbers: Bool) -> LogRow {
+        var parts = [style.sizeName(size)]
+        if caffeineMg > 0 { parts.append("\(Int(caffeineMg)) mg") }
+        if showNumbers && kcal > 0 { parts.append(Format.kcal(kcal)) }
+        return LogRow(icon: kind.systemImage, title: style.displayName,
+                      detail: parts.joined(separator: " · "), time: timestamp)
+    }
+}

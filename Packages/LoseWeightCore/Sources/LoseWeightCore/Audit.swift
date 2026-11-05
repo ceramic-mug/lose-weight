@@ -92,6 +92,13 @@ public struct PeriodReport: Equatable, Sendable {
     public var categoryCounts: [FoodCategory: Int]
     /// Indulgent drinks (soda, sweet coffee, alcohol).
     public var sweetDrinks: Int
+    public var drinksLogged: Int
+    /// Average caffeine on days with any drink logged.
+    public var avgCaffeineMg: Double?
+    /// Days over the 400 mg guideline.
+    public var highCaffeineDays: Int
+    /// Days with caffeine after 2 pm.
+    public var lateCaffeineDays: Int
     public var foodDaysLogged: Int
     public var averageDailyKcal: Double?
     public var targetKcal: Double
@@ -138,6 +145,7 @@ public enum Auditor {
         start: Date,
         end: Date,
         food: [FoodLog],
+        drinks: [DrinkLog] = [],
         exercise: [ExerciseLog],
         weights: [WeightSample],
         targetKcal: Double,
@@ -155,6 +163,7 @@ public enum Auditor {
 
         let food = food.filter { inRange($0.date) }
         let exercise = exercise.filter { inRange($0.date) }
+        let drinks = drinks.filter { inRange($0.date) }
 
         // Eating
         var tiers: [Healthiness: Int] = [:]
@@ -167,6 +176,12 @@ public enum Auditor {
             let day = calendar.startOfDay(for: f.date)
             kcalByDay[day, default: 0] += f.calories.mid
             qualityByDay[day, default: []].append(f.healthiness.qualityScore)
+        }
+        // Drink calories count toward intake on days with food logged. A coffee-only
+        // day shouldn't look like a day of barely eating.
+        for d in drinks {
+            let day = calendar.startOfDay(for: d.date)
+            if kcalByDay[day] != nil { kcalByDay[day]! += d.kcal }
         }
         // Water, black coffee etc. shouldn't count toward "healthy share" or quality.
         let scored = food.filter { !($0.category == .drink && $0.healthiness == .lighter) }
@@ -191,8 +206,17 @@ public enum Auditor {
         }
         let rate = WeightTrend.kgPerWeek(trend, endingAt: inPeriod.last?.day, calendar: calendar)
 
+        // Drinks & caffeine
+        let caffeineByDay = DrinkMath.caffeineByDay(drinks, calendar: calendar)
+        let drinkDays = Set(drinks.map { calendar.startOfDay(for: $0.date) })
+        let avgCaffeine: Double? = drinkDays.isEmpty ? nil : caffeineByDay.values.reduce(0, +) / Double(drinkDays.count)
+        let highCaffeineDays = caffeineByDay.values.filter { $0 > DrinkMath.caffeineDailyLimitMg }.count
+        let lateCaffeineDays = Set(drinks
+            .filter { $0.caffeineMg >= 30 && calendar.component(.hour, from: $0.date) >= DrinkMath.lateCaffeineHour }
+            .map { calendar.startOfDay(for: $0.date) }).count
+
         // Habit
-        var loggedDays = Set(kcalByDay.keys)
+        var loggedDays = Set(kcalByDay.keys).union(drinkDays)
         exercise.forEach { loggedDays.insert(calendar.startOfDay(for: $0.date)) }
         inPeriod.forEach { loggedDays.insert($0.day) }
 
@@ -225,7 +249,12 @@ public enum Auditor {
             mealsLogged: food.count,
             tierCounts: tiers,
             categoryCounts: categories,
-            sweetDrinks: food.filter { $0.category == .drink && $0.healthiness == .indulgent }.count,
+            sweetDrinks: food.filter { $0.category == .drink && $0.healthiness == .indulgent }.count
+                + drinks.filter(\.isSweet).count,
+            drinksLogged: drinks.count,
+            avgCaffeineMg: avgCaffeine,
+            highCaffeineDays: highCaffeineDays,
+            lateCaffeineDays: lateCaffeineDays,
             foodDaysLogged: kcalByDay.count,
             averageDailyKcal: avgKcal,
             targetKcal: targetKcal,
@@ -296,6 +325,15 @@ public enum InsightEngine {
             ))
         }
 
+        if r.highCaffeineDays > 0 {
+            out.append(Insight(
+                kind: .caution,
+                title: "Caffeine topped 400 mg on \(r.highCaffeineDays) day\(r.highCaffeineDays == 1 ? "" : "s")",
+                detail: "400 mg is the daily guideline for most adults. Swap one cup for decaf or tea.",
+                systemImage: "cup.and.saucer"
+            ))
+        }
+
         // Celebrations.
         if r.activeMinutesPerWeek >= EnergyConstants.weeklyActiveMinutesGoal {
             out.append(Insight(
@@ -343,6 +381,14 @@ public enum InsightEngine {
                 title: "Fewer sweet drinks",
                 detail: "≈\(Int((Double(sugaryDrinks) * weekScale).rounded())) a week. Swap half for water or unsweetened coffee.",
                 systemImage: "cup.and.saucer"
+            ))
+        }
+        if r.lateCaffeineDays >= 2 {
+            out.append(Insight(
+                kind: .suggest,
+                title: "Caffeine after 2 pm on \(r.lateCaffeineDays) days",
+                detail: "It can affect sleep hours later. Try decaf in the afternoon.",
+                systemImage: "moon.zzz"
             ))
         }
         let indulgent = r.tierCounts[.indulgent] ?? 0

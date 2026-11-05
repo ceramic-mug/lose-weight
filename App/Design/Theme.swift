@@ -6,6 +6,7 @@ enum Theme {
     static let accent = Color(red: 0.16, green: 0.50, blue: 0.73)
     static let food = Color(red: 0.16, green: 0.50, blue: 0.73)
     static let exercise = Color(red: 0.93, green: 0.49, blue: 0.20)
+    static let drink = Color(hex: 0x9C6644)
     static let weight = Color(red: 0.42, green: 0.36, blue: 0.80)
 
     // Tier colors: teal / amber / rose. Checked for color-blind separation and contrast

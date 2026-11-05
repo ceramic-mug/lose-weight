@@ -7,12 +7,13 @@ struct HistoryView: View {
     let profile: UserProfile
 
     enum Filter: String, CaseIterable, Identifiable {
-        case all, food, exercise, weight
+        case all, food, drink, exercise, weight
         var id: String { rawValue }
         var title: String {
             switch self {
             case .all: "All"
             case .food: "Food"
+            case .drink: "Drinks"
             case .exercise: "Exercise"
             case .weight: "Weight"
             }
@@ -21,12 +22,14 @@ struct HistoryView: View {
 
     enum Item: Identifiable {
         case food(FoodEntry)
+        case drink(DrinkEntry)
         case exercise(ExerciseEntry)
         case weight(WeightEntry)
 
         var id: PersistentIdentifier {
             switch self {
             case .food(let e): e.persistentModelID
+            case .drink(let e): e.persistentModelID
             case .exercise(let e): e.persistentModelID
             case .weight(let e): e.persistentModelID
             }
@@ -42,6 +45,7 @@ struct HistoryView: View {
         var date: Date {
             switch self {
             case .food(let e): e.timestamp
+            case .drink(let e): e.timestamp
             case .exercise(let e): e.timestamp
             case .weight(let e): e.timestamp
             }
@@ -56,6 +60,7 @@ struct HistoryView: View {
 
     @Environment(\.modelContext) private var context
     @Query(sort: \FoodEntry.timestamp, order: .reverse) private var foods: [FoodEntry]
+    @Query(sort: \DrinkEntry.timestamp, order: .reverse) private var drinks: [DrinkEntry]
     @Query(sort: \ExerciseEntry.timestamp, order: .reverse) private var exercises: [ExerciseEntry]
     @Query(sort: \WeightEntry.timestamp) private var weights: [WeightEntry]
 
@@ -103,7 +108,7 @@ struct HistoryView: View {
                         Spacer()
                         if filter == .all || filter == .food,
                            day.items.contains(where: \.isFood) {
-                            let budget = snap.dayBudget(foods: foods, exercises: exercises, on: day.day)
+                            let budget = snap.dayBudget(foods: foods, drinks: drinks, exercises: exercises, on: day.day)
                             Text("\(Format.percent(budget.fraction)) of budget")
                                 .monospacedDigit()
                         }
@@ -118,6 +123,7 @@ struct HistoryView: View {
         .sheet(item: $editing) { item in
             switch item {
             case .food(let e): EditFoodView(entry: e)
+            case .drink(let e): EditDrinkView(entry: e)
             case .exercise(let e): EditExerciseView(entry: e, weightKg: snap.weightForExerciseKg)
             case .weight(let e): EditWeightView(entry: e, units: profile.units)
             }
@@ -128,6 +134,7 @@ struct HistoryView: View {
     private func row(_ item: Item) -> some View {
         switch item {
         case .food(let e): e.row(showNumbers: profile.showCalorieNumbers)
+        case .drink(let e): e.row(showNumbers: profile.showCalorieNumbers)
         case .exercise(let e): e.row
         case .weight(let e): e.row(units: profile.units)
         }
@@ -136,6 +143,7 @@ struct HistoryView: View {
     private func grouped() -> [Day] {
         var items: [Item] = []
         if filter == .all || filter == .food { items += foods.map(Item.food) }
+        if filter == .all || filter == .drink { items += drinks.map(Item.drink) }
         if filter == .all || filter == .exercise { items += exercises.map(Item.exercise) }
         if filter == .all || filter == .weight { items += weights.map(Item.weight) }
         let cal = Calendar.current
@@ -159,6 +167,7 @@ struct HistoryView: View {
     private func delete(_ item: Item) {
         switch item {
         case .food(let e): context.delete(e)
+        case .drink(let e): context.delete(e)
         case .exercise(let e): context.delete(e)
         case .weight(let e): context.delete(e)
         }

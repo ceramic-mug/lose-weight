@@ -8,8 +8,8 @@ struct CSVExport: Transferable {
     let text: String
 
     @MainActor
-    init(foods: [FoodEntry], exercises: [ExerciseEntry], weights: [WeightEntry]) {
-        text = Self.csv(foods: foods, exercises: exercises, weights: weights)
+    init(foods: [FoodEntry], drinks: [DrinkEntry] = [], exercises: [ExerciseEntry], weights: [WeightEntry]) {
+        text = Self.csv(foods: foods, drinks: drinks, exercises: exercises, weights: weights)
     }
 
     static var transferRepresentation: some TransferRepresentation {
@@ -21,13 +21,19 @@ struct CSVExport: Transferable {
     }
 
     @MainActor
-    static func csv(foods: [FoodEntry], exercises: [ExerciseEntry], weights: [WeightEntry]) -> String {
+    static func csv(foods: [FoodEntry], drinks: [DrinkEntry], exercises: [ExerciseEntry], weights: [WeightEntry]) -> String {
         let iso = ISO8601DateFormatter()
-        var rows = ["date,kind,item,detail,amount,unit,kcal_low,kcal_high"]
+        var rows = ["date,kind,item,detail,amount,unit,kcal_low,kcal_high,caffeine_mg"]
         for f in foods {
             rows.append([
                 iso.string(from: f.timestamp), "food", f.category.displayName, "\(f.healthiness.displayName) / \(f.meal.displayName)",
                 f.portion.displayName, "portion", String(Int(f.kcalLow)), String(Int(f.kcalHigh)),
+            ].map(escape).joined(separator: ","))
+        }
+        for d in drinks {
+            rows.append([
+                iso.string(from: d.timestamp), "drink", d.style.displayName, d.style.sizeName(d.size),
+                String(Int(d.ml)), "mL", String(Int(d.kcal)), String(Int(d.kcal)), String(Int(d.caffeineMg)),
             ].map(escape).joined(separator: ","))
         }
         for e in exercises {

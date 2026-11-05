@@ -35,7 +35,9 @@ struct EditFoodView: View {
                 }
                 Section("Where from?") {
                     Picker("Where from?", selection: $category) {
-                        ForEach(FoodCategory.allCases) { Label($0.displayName, systemImage: $0.systemImage).tag($0) }
+                        ForEach(FoodCategory.allCases.filter { $0 != .drink || entry.category == .drink }) {
+                            Label($0.displayName, systemImage: $0.systemImage).tag($0)
+                        }
                     }
                     .pickerStyle(.menu)
                     .labelsHidden()
@@ -213,6 +215,78 @@ struct EditWeightView: View {
                         }
                         .fontWeight(.semibold)
                     }
+                }
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 420, minHeight: 380)
+        #endif
+    }
+}
+
+/// Edit or delete a drink.
+struct EditDrinkView: View {
+    let entry: DrinkEntry
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
+
+    @State private var time: Date
+    @State private var style: DrinkStyle
+    @State private var size: DrinkSize
+
+    init(entry: DrinkEntry) {
+        self.entry = entry
+        _time = State(initialValue: entry.timestamp)
+        _style = State(initialValue: entry.style)
+        _size = State(initialValue: entry.size)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    DatePicker("Time", selection: $time, displayedComponents: [.date, .hourAndMinute])
+                    Picker("Drink", selection: $style) {
+                        ForEach(DrinkKind.allCases) { kind in
+                            Section(kind.displayName) {
+                                ForEach(kind.styles) { Text($0.displayName).tag($0) }
+                            }
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+                Section("Size") {
+                    Picker("Size", selection: $size) {
+                        ForEach(DrinkSize.allCases) { Text(style.sizeName($0)).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    let mg = style.spec.caffeine(size)
+                    if mg > 0 {
+                        LabeledContent("Caffeine", value: "\(Int(mg)) mg")
+                    }
+                }
+                Section {
+                    Button("Delete", role: .destructive) {
+                        context.delete(entry)
+                        dismiss()
+                    }
+                }
+            }
+            .formStyle(.grouped)
+            .navigationTitle("Edit drink")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        entry.update(timestamp: time, style: style, size: size)
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
                 }
             }
         }

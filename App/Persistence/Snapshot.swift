@@ -36,21 +36,26 @@ struct Snapshot {
     /// Weight used for exercise calorie math.
     var weightForExerciseKg: Double { latestScaleKg ?? profile.startWeightKg }
 
-    func dayBudget(foods: [FoodEntry], exercises: [ExerciseEntry], on day: Date = .now, calendar: Calendar = .current) -> DayBudget {
+    func dayBudget(foods: [FoodEntry], drinks: [DrinkEntry] = [], exercises: [ExerciseEntry],
+                   on day: Date = .now, calendar: Calendar = .current) -> DayBudget {
+        let drinkKcal = drinks
+            .filter { calendar.isDate($0.timestamp, inSameDayAs: day) }
+            .reduce(0) { $0 + $1.kcal }
         let eaten = foods
             .filter { calendar.isDate($0.timestamp, inSameDayAs: day) }
-            .reduce(CalorieRange.zero) { $0 + $1.calories }
+            .reduce(CalorieRange(drinkKcal, drinkKcal)) { $0 + $1.calories }
         let burned = exercises
             .filter { calendar.isDate($0.timestamp, inSameDayAs: day) }
             .reduce(0) { $0 + $1.netKcal }
         return DayBudget(targetKcal: target.targetKcal, eaten: eaten, exerciseKcal: burned)
     }
 
-    func report(start: Date, end: Date, foods: [FoodEntry], exercises: [ExerciseEntry], weights: [WeightEntry]) -> PeriodReport {
+    func report(start: Date, end: Date, foods: [FoodEntry], drinks: [DrinkEntry] = [], exercises: [ExerciseEntry], weights: [WeightEntry]) -> PeriodReport {
         Auditor.report(
             start: start,
             end: end,
             food: foods.map(\.log),
+            drinks: drinks.map(\.log),
             exercise: exercises.map(\.log),
             weights: weights.map(\.sample),
             targetKcal: target.targetKcal,
@@ -59,8 +64,9 @@ struct Snapshot {
         )
     }
 
-    func streak(foods: [FoodEntry], exercises: [ExerciseEntry], weights: [WeightEntry]) -> Int {
+    func streak(foods: [FoodEntry], drinks: [DrinkEntry] = [], exercises: [ExerciseEntry], weights: [WeightEntry]) -> Int {
         var days = Set<Date>()
+        drinks.forEach { days.insert($0.timestamp) }
         foods.forEach { days.insert($0.timestamp) }
         exercises.forEach { days.insert($0.timestamp) }
         weights.forEach { days.insert($0.timestamp) }

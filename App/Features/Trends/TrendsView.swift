@@ -37,6 +37,7 @@ struct TrendsView: View {
     let profile: UserProfile
 
     @Query(sort: \FoodEntry.timestamp) private var foods: [FoodEntry]
+    @Query(sort: \DrinkEntry.timestamp) private var drinks: [DrinkEntry]
     @Query(sort: \ExerciseEntry.timestamp) private var exercises: [ExerciseEntry]
     @Query(sort: \WeightEntry.timestamp) private var weights: [WeightEntry]
     @State private var range: TrendRange = .month
@@ -59,6 +60,7 @@ struct TrendsView: View {
         let start = range.start
         let rangeFoods = foods.filter { $0.timestamp >= start }
         let rangeExercise = exercises.filter { $0.timestamp >= start }
+        let rangeDrinks = drinks.filter { $0.timestamp >= start }
 
         ScrollView {
             VStack(spacing: Theme.spacing) {
@@ -71,7 +73,8 @@ struct TrendsView: View {
                 LazyVGrid(columns: columns, spacing: Theme.spacing) {
                     WeightTrendChart(snapshot: snap, range: range)
                     EatingQualityChart(foods: rangeFoods, range: range)
-                    BudgetChart(foods: rangeFoods, exercises: rangeExercise, snapshot: snap, range: range)
+                    BudgetChart(foods: rangeFoods, drinks: rangeDrinks, exercises: rangeExercise, snapshot: snap, range: range)
+                    CaffeineChart(drinks: rangeDrinks, range: range)
                     CategoryMixChart(foods: rangeFoods)
                     ActiveMinutesChart(exercises: exercises, range: range)
                     ActivityHeatmap(exercises: exercises)
@@ -221,6 +224,7 @@ struct EatingQualityChart: View {
 
 struct BudgetChart: View {
     let foods: [FoodEntry]
+    let drinks: [DrinkEntry]
     let exercises: [ExerciseEntry]
     let snapshot: Snapshot
     let range: TrendRange
@@ -235,7 +239,7 @@ struct BudgetChart: View {
         let cal = Calendar.current
         let days = Set(foods.map { cal.startOfDay(for: $0.timestamp) }).sorted()
         let data = days.map { d in
-            Day(day: d, fraction: snapshot.dayBudget(foods: foods, exercises: exercises, on: d).fraction)
+            Day(day: d, fraction: snapshot.dayBudget(foods: foods, drinks: drinks, exercises: exercises, on: d).fraction)
         }
         let onTrack = data.filter { $0.fraction <= 1.1 }.count
 
@@ -266,6 +270,58 @@ struct BudgetChart: View {
                     LegendSwatch(label: "On budget", color: Theme.food, shape: .square)
                     LegendSwatch(label: "Over", color: Theme.indulgent, shape: .square)
                 }
+            }
+        }
+        .card()
+    }
+}
+
+// MARK: - Caffeine
+
+struct CaffeineChart: View {
+    let drinks: [DrinkEntry]
+    let range: TrendRange
+
+    struct Bucket: Identifiable {
+        let start: Date
+        let mg: Double
+        var id: Date { start }
+    }
+
+    var body: some View {
+        let cal = Calendar.current
+        let daily = range.bucket == .day
+        // Daily totals for short ranges; average per day for each week on long ones.
+        var totals: [Date: Double] = [:]
+        for d in drinks {
+            let start = cal.dateInterval(of: range.bucket, for: d.timestamp)?.start ?? cal.startOfDay(for: d.timestamp)
+            totals[start, default: 0] += d.caffeineMg
+        }
+        let buckets = totals.keys.sorted().map { Bucket(start: $0, mg: daily ? totals[$0]! : totals[$0]! / 7) }
+        let limit = DrinkMath.caffeineDailyLimitMg
+        let caffeinated = drinks.filter { $0.caffeineMg > 0 }
+
+        return VStack(alignment: .leading, spacing: 12) {
+            CardHeader(title: "Caffeine", systemImage: "cup.and.saucer.fill", tint: Theme.drink,
+                       trailing: daily ? "mg per day" : "mg per day (avg)")
+            if caffeinated.isEmpty {
+                EmptyHint(text: "No caffeine logged").frame(height: 160)
+            } else {
+                Chart {
+                    ForEach(buckets) { b in
+                        BarMark(x: .value("Date", b.start, unit: range.bucket), y: .value("Caffeine", b.mg))
+                            .foregroundStyle(b.mg > limit ? Theme.balanced : Theme.drink)
+                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                    }
+                    RuleMark(y: .value("Limit", limit))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                        .foregroundStyle(.secondary)
+                        .annotation(position: .top, alignment: .leading) {
+                            Text("400").font(.caption2).foregroundStyle(.secondary)
+                        }
+                }
+                .chartYAxis { AxisMarks(position: .leading) { _ in AxisGridLine().foregroundStyle(.secondary.opacity(0.2)); AxisValueLabel() } }
+                .frame(height: 200)
             }
         }
         .card()

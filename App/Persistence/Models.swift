@@ -92,6 +92,45 @@ final class ExerciseEntry {
 }
 
 @Model
+final class DrinkEntry {
+    var id: UUID = UUID()
+    var timestamp: Date = Date.now
+    var styleRaw: String = DrinkStyle.water.rawValue
+    var sizeRaw: String = DrinkSize.medium.rawValue
+    // Stored at log time so past entries don't change if the table is updated.
+    var ml: Double = 0
+    var caffeineMg: Double = 0
+    var kcal: Double = 0
+
+    init(timestamp: Date = .now, style: DrinkStyle, size: DrinkSize) {
+        let spec = style.spec
+        self.timestamp = timestamp
+        self.styleRaw = style.rawValue
+        self.sizeRaw = size.rawValue
+        self.ml = spec.ml(size)
+        self.caffeineMg = spec.caffeine(size)
+        self.kcal = spec.kcal(size)
+    }
+
+    func update(timestamp: Date, style: DrinkStyle, size: DrinkSize) {
+        self.timestamp = timestamp
+        styleRaw = style.rawValue
+        sizeRaw = size.rawValue
+        let spec = style.spec
+        ml = spec.ml(size)
+        caffeineMg = spec.caffeine(size)
+        kcal = spec.kcal(size)
+    }
+
+    var style: DrinkStyle { DrinkStyle(rawValue: styleRaw) ?? .water }
+    var size: DrinkSize { DrinkSize(rawValue: sizeRaw) ?? .medium }
+    var kind: DrinkKind { style.kind }
+    var comboKey: String { "\(styleRaw)|\(sizeRaw)" }
+
+    var log: DrinkLog { DrinkLog(date: timestamp, style: style, size: size) }
+}
+
+@Model
 final class WeightEntry {
     var id: UUID = UUID()
     var timestamp: Date = Date.now
