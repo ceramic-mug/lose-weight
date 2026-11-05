@@ -189,6 +189,34 @@ final class AuditTests: XCTestCase {
         XCTAssertEqual(m.activeMinutesPerWeek, 450.0 / 30 * 7, accuracy: 0.01)
     }
 
+    func testShortPeriodsAreNotProjected() {
+        // One sweet drink and three meals on the first day of a week.
+        let food = [
+            FoodLog(date: day(0, hour: 10), category: .drink, healthiness: .indulgent, portion: .regular),
+            FoodLog(date: day(0, hour: 8), category: .homeCooked, healthiness: .lighter, portion: .regular),
+            FoodLog(date: day(0, hour: 13), category: .homeCooked, healthiness: .lighter, portion: .regular),
+        ]
+        let r = Auditor.report(start: day(0), end: day(0), food: food, exercise: [], weights: [],
+                               targetKcal: 2000, currentWeightKg: 80, wantsLoss: true, calendar: utc)
+        XCTAssertFalse(r.insights.contains { $0.title == "Fewer sweet drinks" }, "\(r.insights.map(\.title))")
+        XCTAssertNil(r.bestWeekday, "one day is not a pattern")
+    }
+
+    func testBestWeekdayNeedsRepeatedDays() {
+        // Four weeks: Tuesdays lighter, other days balanced.
+        var food: [FoodLog] = []
+        for d in 0..<28 {
+            let tier: Healthiness = d % 7 == 1 ? .lighter : .balanced
+            food.append(FoodLog(date: day(d, hour: 12), category: .homeCooked, healthiness: tier, portion: .regular))
+        }
+        let r = Auditor.report(start: day(0), end: day(27), food: food, exercise: [], weights: [],
+                               targetKcal: 2000, currentWeightKg: 80, wantsLoss: true, calendar: utc)
+        XCTAssertEqual(r.bestWeekday, 3) // Tuesday (Sunday = 1)
+        let week = Auditor.report(start: day(0), end: day(6), food: food, exercise: [], weights: [],
+                                  targetKcal: 2000, currentWeightKg: 80, wantsLoss: true, calendar: utc)
+        XCTAssertNil(week.bestWeekday)
+    }
+
     func testFastLossCaution() {
         // 1.5 kg/week at 80 kg is ~1.9% a week.
         let weights = (0..<30).map { WeightSample(date: day($0), kg: 80 - 0.215 * Double($0)) }

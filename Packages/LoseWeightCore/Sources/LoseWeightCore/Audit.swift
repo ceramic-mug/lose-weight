@@ -196,13 +196,16 @@ public enum Auditor {
         exercise.forEach { loggedDays.insert(calendar.startOfDay(for: $0.date)) }
         inPeriod.forEach { loggedDays.insert($0.day) }
 
-        var weekdayQuality: [Int: [Double]] = [:]
+        // Best weekday needs a real pattern: each weekday seen on 2+ separate days,
+        // and at least 3 weekdays to compare. A single week never qualifies.
+        var weekdayDays: [Int: [Double]] = [:]
         for (day, scores) in qualityByDay {
-            weekdayQuality[calendar.component(.weekday, from: day), default: []].append(contentsOf: scores)
+            weekdayDays[calendar.component(.weekday, from: day), default: []].append(avg(scores))
         }
-        let bestWeekday = weekdayQuality
-            .filter { $0.value.count >= 2 }
-            .max { avg($0.value) < avg($1.value) }?.key
+        let eligible = weekdayDays.filter { $0.value.count >= 2 }
+        let bestWeekday = eligible.count >= 3
+            ? eligible.max { avg($0.value) < avg($1.value) }?.key
+            : nil
 
         // Score
         let foodPart = (quality ?? 0) * 40
@@ -270,7 +273,9 @@ public enum Auditor {
 public enum InsightEngine {
     public static func insights(for r: PeriodReport, currentWeightKg: Double, wantsLoss: Bool, calendar: Calendar = .current) -> [Insight] {
         var out: [Insight] = []
-        let weekScale = 7 / Double(r.days)
+        // Scale counts to "per week" only for periods longer than a week; a week in
+        // progress shows its real counts (one drink on Monday is not "7 a week").
+        let weekScale = r.days > 7 ? 7 / Double(r.days) : 1
 
         // Safety first.
         if let rate = r.kgPerWeek, wantsLoss, currentWeightKg > 0,

@@ -18,6 +18,9 @@ struct Snapshot {
 
     var units: UnitSystem { profile.units }
 
+    /// Still working toward the goal, judged from where you are now (not where you started).
+    var wantsLoss: Bool { !profile.maintenanceOnly && profile.goalWeightKg < currentKg - 0.1 }
+
     /// Smoothed current weight, or the starting weight if nothing has been logged yet.
     var currentKg: Double { trend.last?.trendKg ?? profile.startWeightKg }
     var latestScaleKg: Double? { trend.last?.scaleKg }
@@ -52,7 +55,7 @@ struct Snapshot {
             weights: weights.map(\.sample),
             targetKcal: target.targetKcal,
             currentWeightKg: currentKg,
-            wantsLoss: profile.wantsLoss
+            wantsLoss: wantsLoss
         )
     }
 

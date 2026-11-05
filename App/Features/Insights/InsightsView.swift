@@ -70,7 +70,7 @@ struct InsightsView: View {
                              systemImage: "figure.run", tint: Theme.exercise)
                     StatTile(title: "Strength days",
                              value: "\(report.strengthDays)",
-                             caption: "/ 2 per week",
+                             caption: report.days > 7 ? "days in \(report.days) · goal 2 a week" : "of 2 this week",
                              systemImage: "dumbbell", tint: Theme.exercise)
                     StatTile(title: "Trend weight",
                              value: report.trendChangeKg.map { units.formatWeightChange($0) } ?? "—",
@@ -175,7 +175,7 @@ struct GoalCard: View {
     }
 
     private var projectionText: String? {
-        guard snapshot.profile.wantsLoss else { return "Maintenance" }
+        guard snapshot.wantsLoss else { return snapshot.profile.maintenanceOnly ? "Maintenance" : "Goal reached" }
         return snapshot.projectedGoalDate.map { "On pace for \($0.formatted(.dateTime.month(.abbreviated).year()))" }
     }
 }
