@@ -40,7 +40,8 @@ struct TodayView: View {
                 TodayLogCard(
                     foods: foods.filter { Calendar.current.isDateInToday($0.timestamp) },
                     exercises: exercises.filter { Calendar.current.isDateInToday($0.timestamp) },
-                    showNumbers: profile.showCalorieNumbers
+                    showNumbers: profile.showCalorieNumbers,
+                    weightKg: snap.weightForExerciseKg
                 )
                 streakFooter(snap.streak(foods: foods, exercises: exercises, weights: weights))
             }
@@ -139,14 +140,14 @@ struct ActivityCard: View {
     var body: some View {
         let week = Calendar.current.weekInterval(containing: .now)
         let thisWeek = exercises.filter { week.contains($0.timestamp) }
-        let credited = thisWeek.reduce(0) { $0 + $1.log.guidelineMinutes }
+        let minutes = thisWeek.reduce(0) { $0 + $1.minutes }
         let strengthDays = Set(thisWeek.filter { $0.type.isMuscleStrengthening }.map { Calendar.current.startOfDay(for: $0.timestamp) }).count
         let goal = EnergyConstants.weeklyActiveMinutesGoal
 
         VStack(alignment: .leading, spacing: 12) {
             CardHeader(title: "Active this week", systemImage: "figure.run", tint: Theme.exercise,
-                       trailing: "\(Int(credited)) / \(Int(goal)) min")
-            GoalBar(value: credited, goal: goal, tint: Theme.exercise)
+                       trailing: "\(Int(minutes)) / \(Int(goal)) min")
+            GoalBar(value: minutes, goal: goal, tint: Theme.exercise)
             HStack {
                 Spacer()
                 HStack(spacing: 4) {
@@ -211,7 +212,10 @@ struct TodayLogCard: View {
     let foods: [FoodEntry]
     let exercises: [ExerciseEntry]
     let showNumbers: Bool
+    let weightKg: Double
     @Environment(\.modelContext) private var context
+    @State private var editingFood: FoodEntry?
+    @State private var editingExercise: ExerciseEntry?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -228,7 +232,8 @@ struct TodayLogCard: View {
                             title: item.category.displayName,
                             detail: "\(item.healthiness.displayName) · \(item.portion.displayName)" + (showNumbers ? " · \(Format.kcalRange(item.calories))" : ""),
                             dot: item.healthiness,
-                            time: item.timestamp) { context.delete(item) }
+                            time: item.timestamp,
+                            onTap: { editingFood = item }) { context.delete(item) }
                     }
                 }
             }
@@ -239,31 +244,38 @@ struct TodayLogCard: View {
                         title: item.type.displayName,
                         detail: "\(Format.minutes(item.minutes)) · \(item.intensity.displayName)" + (item.isFromHealth ? " · Health" : ""),
                         dot: nil,
-                        time: item.timestamp) { context.delete(item) }
+                        time: item.timestamp,
+                        onTap: { editingExercise = item }) { context.delete(item) }
                 }
             }
         }
         .card()
+        .sheet(item: $editingFood) { EditFoodView(entry: $0) }
+        .sheet(item: $editingExercise) { EditExerciseView(entry: $0, weightKg: weightKg) }
     }
 
-    private func row(icon: String, title: String, detail: String, dot: Healthiness?, time: Date, onDelete: @escaping () -> Void) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .frame(width: 28)
-                .foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title).font(.subheadline.weight(.medium))
-                Text(detail).font(.caption).foregroundStyle(.secondary)
+    private func row(icon: String, title: String, detail: String, dot: Healthiness?, time: Date,
+                     onTap: @escaping () -> Void, onDelete: @escaping () -> Void) -> some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .frame(width: 28)
+                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title).font(.subheadline.weight(.medium))
+                    Text(detail).font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                if let dot { TierDot(healthiness: dot) }
+                Text(time, format: .dateTime.hour().minute())
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
             }
-            Spacer()
-            if let dot { TierDot(healthiness: dot) }
-            Text(time, format: .dateTime.hour().minute())
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
         }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
         .contextMenu {
             Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)
         }

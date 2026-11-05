@@ -30,6 +30,18 @@ final class FoodEntry {
         self.kcalHigh = range.high
     }
 
+    /// Change any detail; the calorie estimate is recalculated.
+    func update(timestamp: Date, category: FoodCategory, healthiness: Healthiness, portion: Portion, meal: MealSlot) {
+        self.timestamp = timestamp
+        categoryRaw = category.rawValue
+        healthinessRaw = healthiness.rawValue
+        portionRaw = portion.rawValue
+        mealRaw = meal.rawValue
+        let range = EnergyEstimator.calories(category: category, healthiness: healthiness, portion: portion)
+        kcalLow = range.low
+        kcalHigh = range.high
+    }
+
     var category: FoodCategory { FoodCategory(rawValue: categoryRaw) ?? .homeCooked }
     var healthiness: Healthiness { Healthiness(rawValue: healthinessRaw) ?? .balanced }
     var portion: Portion { Portion(rawValue: portionRaw) ?? .regular }
@@ -61,6 +73,15 @@ final class ExerciseEntry {
         self.minutes = minutes
         self.netKcal = ExerciseMath.netCalories(type: type, intensity: intensity, weightKg: weightKg, minutes: minutes)
         self.healthKitID = healthKitID
+    }
+
+    /// Change any detail; calories are recalculated.
+    func update(timestamp: Date, type: ExerciseType, intensity: Intensity, minutes: Double, weightKg: Double) {
+        self.timestamp = timestamp
+        typeRaw = type.rawValue
+        intensityRaw = intensity.rawValue
+        self.minutes = minutes
+        netKcal = ExerciseMath.netCalories(type: type, intensity: intensity, weightKg: weightKg, minutes: minutes)
     }
 
     var type: ExerciseType { ExerciseType(rawValue: typeRaw) ?? .other }
@@ -105,7 +126,7 @@ final class UserProfile {
     var activityRaw: String = ActivityLevel.sedentary.rawValue
     var paceRaw: String = LossPace.steady.rawValue
     var unitsRaw: String = UnitSystem.imperial.rawValue
-    /// Pregnancy / breastfeeding / eating-disorder history: no calorie deficit.
+    /// "Just maintain my weight": no calorie deficit.
     var maintenanceOnly: Bool = false
 
     var showCalorieNumbers: Bool = false

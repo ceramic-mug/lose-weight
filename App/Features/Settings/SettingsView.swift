@@ -25,9 +25,9 @@ struct SettingsView: View {
                     }
                 }
                 .disabled(profile.maintenanceOnly)
-                WeightField(title: "Goal weight", kg: $profile.goalWeightKg, units: profile.units)
+                WeightRow(title: "Goal weight", kg: $profile.goalWeightKg, units: profile.units)
                     .disabled(profile.maintenanceOnly)
-                Toggle("Maintenance only", isOn: $profile.maintenanceOnly)
+                Toggle("Just maintain my weight", isOn: $profile.maintenanceOnly)
             }
 
             Section("About you") {
@@ -42,7 +42,7 @@ struct SettingsView: View {
                 Picker("Everyday activity", selection: $profile.activityRaw) {
                     ForEach(ActivityLevel.allCases) { Text($0.displayName).tag($0.rawValue) }
                 }
-                WeightField(title: "Starting weight", kg: $profile.startWeightKg, units: profile.units)
+                WeightRow(title: "Starting weight", kg: $profile.startWeightKg, units: profile.units)
             }
 
             Section("Display") {

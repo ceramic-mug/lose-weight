@@ -336,7 +336,7 @@ struct ActiveMinutesChart: View {
         let weeks: [Week] = (0..<weeksShown).reversed().compactMap { i in
             guard let start = cal.date(byAdding: .weekOfYear, value: -i, to: thisWeek),
                   let end = cal.date(byAdding: .weekOfYear, value: 1, to: start) else { return nil }
-            let mins = exercises.filter { $0.timestamp >= start && $0.timestamp < end }.reduce(0) { $0 + $1.log.guidelineMinutes }
+            let mins = exercises.filter { $0.timestamp >= start && $0.timestamp < end }.reduce(0) { $0 + $1.minutes }
             return Week(start: start, minutes: mins)
         }
         let goal = EnergyConstants.weeklyActiveMinutesGoal

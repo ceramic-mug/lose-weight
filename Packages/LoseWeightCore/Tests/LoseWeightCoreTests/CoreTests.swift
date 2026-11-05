@@ -75,12 +75,6 @@ final class EnergyTests: XCTestCase {
         XCTAssertEqual(ExerciseMath.netCalories(type: .walk, intensity: .vigorous, weightKg: 80, minutes: 30), 160, accuracy: 0.01)
     }
 
-    func testGuidelineMinutes() {
-        XCTAssertEqual(ExerciseMath.guidelineMinutes(type: .walk, intensity: .light, minutes: 30), 0)
-        XCTAssertEqual(ExerciseMath.guidelineMinutes(type: .walk, intensity: .moderate, minutes: 30), 30)
-        XCTAssertEqual(ExerciseMath.guidelineMinutes(type: .run, intensity: .moderate, minutes: 30), 60)
-    }
-
     func testMealSlotSuggestion() {
         XCTAssertEqual(MealSlot.suggested(for: day(0, hour: 8), calendar: utc), .breakfast)
         XCTAssertEqual(MealSlot.suggested(for: day(0, hour: 13), calendar: utc), .lunch)
@@ -163,7 +157,8 @@ final class AuditTests: XCTestCase {
         XCTAssertEqual(r.healthyShare!, 14.0 / 21.0, accuracy: 1e-9)
         // Daily mid: 425 + 1200 + 600 = 2225
         XCTAssertEqual(r.averageDailyKcal!, 2225, accuracy: 0.01)
-        XCTAssertEqual(r.guidelineMinutes, 30 + 40 + 30)
+        XCTAssertEqual(r.activeMinutes, 30 + 20 + 30)
+        XCTAssertEqual(r.activeMinutesPerWeek, 80)
         XCTAssertEqual(r.strengthDays, 1)
         XCTAssertEqual(r.daysWithAnyLog, 7)
         XCTAssertLessThan(r.trendChangeKg!, 0)
@@ -175,6 +170,23 @@ final class AuditTests: XCTestCase {
         XCTAssertTrue(titles.contains { $0.contains("more active minutes") })
         XCTAssertFalse(r.insights.contains { $0.kind == .caution })
         XCTAssertTrue((0...100).contains(r.overallScore))
+    }
+
+    /// Regression: a 45-minute run on day 4 of the week showed as 90 (hard effort doubled)
+    /// and then 158 (partial week projected to 7 days). It must read 45.
+    func testRunMinutesAreNotDoubledOrProjected() {
+        let run = ExerciseLog(date: day(3), type: .run, intensity: .moderate, minutes: 45)
+        let r = Auditor.report(start: day(0), end: day(3), food: [], exercise: [run], weights: [],
+                               targetKcal: 2000, currentWeightKg: 80, wantsLoss: true, calendar: utc)
+        XCTAssertEqual(r.activeMinutes, 45)
+        XCTAssertEqual(r.activeMinutesPerWeek, 45)
+        XCTAssertTrue(r.insights.contains { $0.title == "105 more active minutes a week" }, "\(r.insights.map(\.title))")
+
+        // Over 30 days the figure is a weekly average.
+        let month = (0..<30).filter { $0 % 2 == 0 }.map { ExerciseLog(date: day($0), type: .walk, intensity: .moderate, minutes: 30) }
+        let m = Auditor.report(start: day(0), end: day(29), food: [], exercise: month, weights: [],
+                               targetKcal: 2000, currentWeightKg: 80, wantsLoss: true, calendar: utc)
+        XCTAssertEqual(m.activeMinutesPerWeek, 450.0 / 30 * 7, accuracy: 0.01)
     }
 
     func testFastLossCaution() {

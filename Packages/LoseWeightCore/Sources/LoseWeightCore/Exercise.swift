@@ -112,17 +112,4 @@ public enum ExerciseMath {
     public static func netCalories(type: ExerciseType, intensity: Intensity, weightKg: Double, minutes: Double) -> Double {
         netCalories(met: type.met(for: intensity), weightKg: weightKg, minutes: minutes)
     }
-
-    /// Minutes credited toward the 150-minute weekly guideline (HHS 2018).
-    /// Moderate (3–5.9 MET) counts 1×, vigorous (≥6 MET) counts 2×. Light (<3 MET) is great
-    /// for health but doesn't count toward the aerobic target.
-    public static func guidelineMinutes(met: Double, minutes: Double) -> Double {
-        if met >= 6 { return minutes * 2 }
-        if met >= 3 { return minutes }
-        return 0
-    }
-
-    public static func guidelineMinutes(type: ExerciseType, intensity: Intensity, minutes: Double) -> Double {
-        guidelineMinutes(met: type.met(for: intensity), minutes: minutes)
-    }
 }

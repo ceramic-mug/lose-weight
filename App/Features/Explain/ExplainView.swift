@@ -39,7 +39,7 @@ struct ExplainView: View {
                 }
                 section(.effort) {
                     ForEach(Intensity.allCases) { i in row(i.displayName, i.talkTest + ".") }
-                    Text("The weekly goal is 150 active minutes plus strength training on 2 days (Physical Activity Guidelines for Americans). Moderate minutes count once, hard minutes count double, and easy minutes don't count toward the 150.")
+                    Text("The weekly goal is 150 active minutes plus strength training on 2 days (Physical Activity Guidelines for Americans). Every logged minute counts toward the 150. Effort only changes how many calories are added back.")
                 }
                 section(.budget) {
                     Text("Your budget is the energy your body uses in a day (Mifflin-St Jeor equation × your everyday activity) minus about 275–825 kcal, depending on your pace. It never goes below 1,200 kcal (1,500 for men).")
@@ -68,7 +68,7 @@ struct ExplainView: View {
                     Text("Health data is only available on iPhone. Your Mac gets the same entries through iCloud.")
                 }
                 section(.safety) {
-                    Text("This app is for adults. If you're pregnant, breastfeeding, or have a history of an eating disorder, it sets your budget to maintenance (no calorie cut).")
+                    Text("Your budget never goes below 1,200 kcal (1,500 for men). If you'd rather not cut calories at all, turn on \"Just maintain my weight\" in Settings.")
                     Text("If your weight drops faster than 1% a week, the app will suggest easing off.")
                     Text("Sensible gives general guidance and is not medical advice. Talk to your doctor or a registered dietitian about your own needs.")
                 }

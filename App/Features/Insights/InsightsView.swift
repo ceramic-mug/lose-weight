@@ -65,8 +65,8 @@ struct InsightsView: View {
                              caption: profile.showCalorieNumbers ? "of \(Format.kcal(report.targetKcal))" : "of budget",
                              systemImage: "fork.knife", tint: Theme.food)
                     StatTile(title: "Active minutes",
-                             value: "\(Int(report.guidelineMinutesPerWeek.rounded()))",
-                             caption: "/ 150 per week",
+                             value: "\(Int(report.activeMinutesPerWeek.rounded()))",
+                             caption: report.days > 7 ? "per week (avg) · goal 150" : "of 150 this week",
                              systemImage: "figure.run", tint: Theme.exercise)
                     StatTile(title: "Strength days",
                              value: "\(report.strengthDays)",

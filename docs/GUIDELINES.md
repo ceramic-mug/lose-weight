@@ -13,7 +13,7 @@ Every target, estimate and tip in Sensible comes from a published guideline. The
 | Everyday activity | × 1.2 mostly sitting, × 1.375 on feet some of the day, × 1.55 on feet most of the day. Logged workouts are **not** part of this factor; they're added separately. | Standard activity factors (FAO/WHO/UNU) |
 | Deficit | Gentle 0.25, Steady 0.5, Brisk 0.75 kg/week, at ≈ 7,700 kcal per kg (≈ 275 / 550 / 825 kcal a day) | NIH/NHLBI *Aim for a Healthy Weight*; CDC *Losing Weight* (1–2 lb/week) |
 | Floor | The budget never goes below 1,200 kcal (women / unspecified) or 1,500 kcal (men) | NHLBI *Clinical Guidelines* (1998); 2013 AHA/ACC/TOS Obesity Guideline |
-| Maintenance only | No deficit for pregnancy, breastfeeding, or an eating-disorder history; the user is pointed to a clinician | ACOG; NEDA |
+| Maintain only | Optional setting ("Just maintain my weight"): no deficit, budget = maintenance | — |
 
 The target is recalculated from the **trend** weight (not the latest scale reading) as weight changes.
 
@@ -51,8 +51,9 @@ added sugar, which is why drinks are their own category and sweet drinks get the
   (Ainsworth et al. 2011; Herrmann et al. 2024). Only **net** calories, `(MET − 1)`, are added to the food
   budget, because resting burn is already counted.
 - **Weekly target:** 150 min moderate or 75 min vigorous aerobic activity, plus muscle-strengthening on
-  2+ days (*Physical Activity Guidelines for Americans*, 2nd ed., HHS 2018). Moderate means 3–5.9 MET (counts
-  once); vigorous means ≥ 6 MET (counts double). Light activity (< 3 MET) is shown but doesn't count toward 150.
+  2+ days (*Physical Activity Guidelines for Americans*, 2nd ed., HHS 2018). To keep it simple, the app counts
+  every logged minute once toward 150 and shows exactly what you logged; effort only changes calories.
+  A week shows its real total so far (never projected); longer periods show the weekly average.
 - **Effort** uses the CDC "talk test": easy = can chat, moderate = can talk but not sing, hard = only a few words.
 - **Apple Health workouts** get an intensity by matching their active energy per kg-hour to the closest MET
   level for that activity.

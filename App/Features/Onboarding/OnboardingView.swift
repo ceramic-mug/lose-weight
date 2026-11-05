@@ -27,7 +27,7 @@ struct OnboardingView: View {
                     switch step {
                     case 0: welcome
                     case 1: AboutYouStep(draft: $draft)
-                    case 2: SafetyStep(draft: $draft)
+                    case 2: WeightStep(draft: $draft)
                     case 3: ActivityStep(draft: $draft)
                     case 4: GoalStep(draft: $draft)
                     default: FinishStep(draft: $draft)
@@ -64,7 +64,8 @@ struct OnboardingView: View {
 
     private var canContinue: Bool {
         switch step {
-        case 1: draft.isAdult && draft.weightKg > 25 && draft.heightCm > 100
+        case 1: draft.heightCm > 100
+        case 2: draft.weightKg > 25
         case 4: draft.goalWeightKg >= TargetCalculator.minimumGoalWeight(heightCm: draft.heightCm) - 0.05
         default: true
         }
@@ -128,19 +129,15 @@ struct ProfileDraft {
     var goalWeightKg: Double = 80.75
     var activity: ActivityLevel = .sedentary
     var pace: LossPace = .steady
-    var pregnant = false
-    var eatingDisorderHistory = false
     var useHealth = false
     var reminderEnabled = true
     var showCalories = false
 
     var age: Int { Calendar.current.component(.year, from: .now) - birthYear }
-    var isAdult: Bool { age >= 18 }
-    var maintenanceOnly: Bool { pregnant || eatingDisorderHistory }
 
     var profile: Profile {
         Profile(sex: sex, ageYears: age, heightCm: heightCm, weightKg: weightKg, goalWeightKg: goalWeightKg,
-                activity: activity, pace: pace, maintenanceOnly: maintenanceOnly)
+                activity: activity, pace: pace)
     }
 
     func apply(to p: UserProfile) {
@@ -149,10 +146,10 @@ struct ProfileDraft {
         p.units = units
         p.heightCm = heightCm
         p.startWeightKg = weightKg
-        p.goalWeightKg = maintenanceOnly ? weightKg : goalWeightKg
+        p.goalWeightKg = goalWeightKg
         p.activity = activity
         p.pace = pace
-        p.maintenanceOnly = maintenanceOnly
+        p.maintenanceOnly = false
         p.useHealth = useHealth
         p.reminderEnabled = reminderEnabled
         p.showCalorieNumbers = showCalories
@@ -191,43 +188,27 @@ struct AboutYouStep: View {
             LabeledContent("Birth year") {
                 Picker("Birth year", selection: $draft.birthYear) {
                     let year = Calendar.current.component(.year, from: .now)
-                    ForEach((year - 100)...(year - 10), id: \.self) { Text(String($0)).tag($0) }
+                    ForEach((year - 100)...(year - 18), id: \.self) { Text(String($0)).tag($0) }
                 }
                 .labelsHidden()
             }
-            if !draft.isAdult {
-                Label("For adults only", systemImage: "exclamationmark.triangle")
-                    .font(.footnote)
-                    .foregroundStyle(Theme.indulgent)
-            }
 
             HeightField(heightCm: $draft.heightCm, units: draft.units)
-            WeightField(title: "Current weight", kg: $draft.weightKg, units: draft.units)
         }
         .card()
-        .onChange(of: draft.weightKg) { _, newValue in
-            draft.goalWeightKg = (newValue * 0.95 * 10).rounded() / 10
-        }
     }
 }
 
-struct SafetyStep: View {
+struct WeightStep: View {
     @Binding var draft: ProfileDraft
 
     var body: some View {
-        StepTitle(title: "Safety check")
-
-        VStack(alignment: .leading, spacing: 16) {
-            Toggle("I'm pregnant or breastfeeding", isOn: $draft.pregnant)
-            Toggle("I have a history of an eating disorder", isOn: $draft.eatingDisorderHistory)
-        }
-        .card()
-
-        if draft.maintenanceOnly {
-            Label("Maintenance mode: no calorie cut", systemImage: "heart.text.square")
-                .font(.subheadline)
-                .card()
-        }
+        StepTitle(title: "Current weight")
+        WeightWheel(kg: $draft.weightKg, units: draft.units)
+            .card()
+            .onChange(of: draft.weightKg) { _, newValue in
+                draft.goalWeightKg = (newValue * 0.95 * 10).rounded() / 10
+            }
     }
 }
 
@@ -270,44 +251,42 @@ struct GoalStep: View {
 
         StepTitle(title: "First goal")
 
-        if draft.maintenanceOnly {
-            Text("Maintenance mode").card()
-        } else {
-            VStack(alignment: .leading, spacing: 16) {
-                if !suggestions.isEmpty {
-                    HStack {
-                        ForEach(suggestions.indices, id: \.self) { i in
-                            let kg = suggestions[i]
-                            Button("−\(i == 0 ? 5 : 10)% · \(units.formatWeight(kg, decimals: 0))") {
-                                draft.goalWeightKg = (kg * 10).rounded() / 10
-                            }
-                            .buttonStyle(.bordered)
+        VStack(alignment: .leading, spacing: 16) {
+            if !suggestions.isEmpty {
+                HStack {
+                    ForEach(suggestions.indices, id: \.self) { i in
+                        let kg = suggestions[i]
+                        Button("−\(i == 0 ? 5 : 10)% · \(units.formatWeight(kg, decimals: 0))") {
+                            draft.goalWeightKg = (kg * 10).rounded() / 10
                         }
+                        .buttonStyle(.bordered)
                     }
                 }
-                WeightField(title: "Goal weight", kg: $draft.goalWeightKg, units: units)
-                if draft.goalWeightKg < minGoal {
-                    Label("Lowest healthy goal: \(units.formatWeight(minGoal, decimals: 0))", systemImage: "exclamationmark.triangle")
-                        .font(.footnote)
-                        .foregroundStyle(Theme.indulgent)
-                }
-                LabeledContent("BMI", value: bmi.formatted(.number.precision(.fractionLength(1))))
-                    .font(.subheadline)
             }
-            .card()
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Pace").font(.headline)
-                Picker("Pace", selection: $draft.pace) {
-                    ForEach(LossPace.allCases) { p in
-                        Text("\(p.displayName) · \(units.formatWeight(p.kgPerWeek, decimals: units == .metric ? 2 : 1))/wk").tag(p)
-                    }
-                }
-                .pickerStyle(.inline)
-                .labelsHidden()
+            Text("Goal weight").font(.headline)
+            WeightWheel(kg: $draft.goalWeightKg, units: units)
+            if draft.goalWeightKg < minGoal {
+                Label("Lowest healthy goal: \(units.formatWeight(minGoal, decimals: 0))", systemImage: "exclamationmark.triangle")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.indulgent)
             }
-            .card()
+            LabeledContent("BMI", value: bmi.formatted(.number.precision(.fractionLength(1))))
+                .font(.subheadline)
         }
+        .card()
+
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Pace").font(.headline)
+            Picker("Pace", selection: $draft.pace) {
+                ForEach(LossPace.allCases) { Text($0.displayName).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            Text("≈ \(units.formatWeight(draft.pace.kgPerWeek, decimals: units == .metric ? 2 : 1)) a week")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .card()
 
         HStack(alignment: .firstTextBaseline) {
             Text("Daily food budget").font(.headline)
@@ -352,32 +331,6 @@ struct FinishStep: View {
 }
 
 // MARK: - Fields
-
-struct WeightField: View {
-    let title: String
-    @Binding var kg: Double
-    let units: UnitSystem
-
-    var body: some View {
-        let display = Binding<Double>(
-            get: { (units.displayWeight(fromKg: kg) * 10).rounded() / 10 },
-            set: { kg = units.kg(fromDisplay: $0) }
-        )
-        LabeledContent(title) {
-            HStack(spacing: 8) {
-                TextField(title, value: display, format: .number.precision(.fractionLength(0...1)))
-                    .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: 90)
-                    #if os(iOS)
-                    .keyboardType(.decimalPad)
-                    #endif
-                Text(units.weightSymbol).foregroundStyle(.secondary)
-                Stepper(title, value: display, in: 30...700, step: units == .metric ? 0.5 : 1)
-                    .labelsHidden()
-            }
-        }
-    }
-}
 
 struct HeightField: View {
     @Binding var heightCm: Double

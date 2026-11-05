@@ -31,7 +31,6 @@ public struct ExerciseLog: Equatable, Sendable {
         self.minutes = minutes
     }
 
-    public var guidelineMinutes: Double { ExerciseMath.guidelineMinutes(type: type, intensity: intensity, minutes: minutes) }
 }
 
 public enum EnergyEstimator {
@@ -102,12 +101,13 @@ public struct PeriodReport: Equatable, Sendable {
     public var qualityScore: Double?
 
     // Movement
+    /// Minutes actually logged in the period.
     public var activeMinutes: Double
-    public var guidelineMinutes: Double
     public var strengthDays: Int
     public var exerciseSessions: Int
-    /// Guideline minutes scaled to a week (so a month can be compared to 150/week).
-    public var guidelineMinutesPerWeek: Double
+    /// Minutes to compare with the 150-a-week goal: the real total for a week or less
+    /// (never projected), or the weekly average for longer periods.
+    public var activeMinutesPerWeek: Double
 
     // Weight
     public var trendChangeKg: Double?
@@ -178,9 +178,8 @@ public enum Auditor {
 
         // Movement
         let activeMinutes = exercise.map(\.minutes).reduce(0, +)
-        let guideline = exercise.map(\.guidelineMinutes).reduce(0, +)
         let strengthDays = Set(exercise.filter { $0.type.isMuscleStrengthening }.map { calendar.startOfDay(for: $0.date) }).count
-        let perWeek = guideline / Double(dayCount) * 7
+        let perWeek = dayCount <= 7 ? activeMinutes : activeMinutes / Double(dayCount) * 7
 
         // Weight — compute the trend on all history so the start of the period is already smoothed.
         let trend = WeightTrend.compute(weights, calendar: calendar)
@@ -230,10 +229,9 @@ public enum Auditor {
             healthyShare: healthyShare,
             qualityScore: quality,
             activeMinutes: activeMinutes,
-            guidelineMinutes: guideline,
             strengthDays: strengthDays,
             exerciseSessions: exercise.count,
-            guidelineMinutesPerWeek: perWeek,
+            activeMinutesPerWeek: perWeek,
             trendChangeKg: trendChange,
             kgPerWeek: rate,
             weighIns: inPeriod.count,
@@ -294,11 +292,11 @@ public enum InsightEngine {
         }
 
         // Celebrations.
-        if r.guidelineMinutesPerWeek >= EnergyConstants.weeklyActiveMinutesGoal {
+        if r.activeMinutesPerWeek >= EnergyConstants.weeklyActiveMinutesGoal {
             out.append(Insight(
                 kind: .celebrate,
                 title: "Activity goal met",
-                detail: "\(Int(r.guidelineMinutesPerWeek.rounded())) active minutes a week.",
+                detail: "\(Int(r.activeMinutesPerWeek.rounded())) active minutes a week.",
                 systemImage: "figure.run"
             ))
         }
@@ -351,13 +349,13 @@ public enum InsightEngine {
                 systemImage: "leaf"
             ))
         }
-        let minutesShort = EnergyConstants.weeklyActiveMinutesGoal - r.guidelineMinutesPerWeek
+        let minutesShort = EnergyConstants.weeklyActiveMinutesGoal - r.activeMinutesPerWeek
         if minutesShort > 0 {
             let perDay = Int((minutesShort / 5 / 5).rounded(.up) * 5)
             out.append(Insight(
                 kind: .suggest,
                 title: "\(Int(minutesShort.rounded())) more active minutes a week",
-                detail: "≈\(max(perDay, 5)) min on 5 days. A brisk walk counts.",
+                detail: "≈\(max(perDay, 5)) min on 5 days. A walk counts.",
                 systemImage: "figure.walk"
             ))
         }
