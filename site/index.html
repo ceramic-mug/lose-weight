@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sensible · Weight loss</title>
-<meta name="description" content="Sensible: weight loss in three taps a meal. For iPhone and Mac.">
+<meta name="description" content="Sensible: weight loss in three taps a meal. Track drinks and caffeine, workouts and weight. For iPhone and Mac.">
 <meta property="og:title" content="Sensible · Weight loss">
 <meta property="og:description" content="Log a meal in three taps.">
 <meta property="og:image" content="assets/icon.png">
@@ -129,6 +129,18 @@ footer a { color: var(--ink-2); }
   </section>
 
   <section>
+    <h2>Coffee counts.</h2>
+    <p class="sub" style="margin-top:14px">Log a drink by type and size. Caffeine adds up on its own. Tap a few.</p>
+    <div class="opts" id="drinks" style="margin-top:22px"></div>
+    <div class="today" aria-live="polite" style="margin-top:28px">
+      <div class="big"><span id="mg">0</span> mg</div>
+      <p class="sub" id="mgStatus">caffeine today, of 400</p>
+      <div class="meter"><i id="mgMeter"></i></div>
+      <button class="reset" id="mgReset" hidden>Start over</button>
+    </div>
+  </section>
+
+  <section>
     <h2>The scale bounces.<br><em>The trend doesn't.</em></h2>
     <svg id="chart" role="img" aria-label="Ten weeks of daily weigh-ins with a smoothed trend line heading down"></svg>
   </section>
@@ -139,7 +151,10 @@ footer a { color: var(--ink-2); }
       <dt>1–2 lb</dt><dd>a week at most, per CDC guidance.</dd>
       <dt>1,200</dt><dd>calories a day is the lowest budget it will ever set.</dd>
       <dt>150</dt><dd>active minutes a week. Logging a walk takes two taps.</dd>
-      <dt>0</dt><dd>accounts, ads, or servers. Your data stays in your iCloud.</dd>
+      <dt>400 mg</dt><dd>of caffeine a day, the FDA guideline. Late-day cups get a gentle nudge.</dd>
+      <dt>Any day</dt><dd>can be fixed. Tap an entry to edit it, or look back in History.</dd>
+      <dt>Watch</dt><dd>optional. Log by hand in a few taps, or import from Apple Health.</dd>
+      <dt>0</dt><dd>accounts, ads, or tracking. iPhone and Mac stay in step through your own iCloud.</dd>
     </dl>
   </section>
 </main>
@@ -218,6 +233,26 @@ footer a { color: var(--ink-2); }
     $('#reset').hidden = eaten === 0;
   }
   $('#reset').onclick = () => { eaten = 0; $('#log').innerHTML = ''; render(); };
+
+  // Drinks: same caffeine values as the app (medium unless noted).
+  const DRINKS = [
+    ['Latte', 150], ['Black coffee', 140], ['Double espresso', 126], ['Cold brew', 205],
+    ['Green tea', 42], ['Diet soda', 46], ['Decaf', 5], ['Water', 0],
+  ];
+  let mg = 0;
+  buttons($('#drinks'), DRINKS, d => d[0], i => {
+    mg += DRINKS[i][1];
+    $('#mg').textContent = mg;
+    $('#mgMeter').style.width = Math.min(100, mg / 4) + '%';
+    $('#mgMeter').style.background = mg > 400 ? 'var(--amber)' : 'var(--teal)';
+    $('#mgStatus').textContent = mg > 400 ? 'over 400 today. Maybe make the next one decaf.' : 'caffeine today, of 400';
+    $('#mgReset').hidden = false;
+    if (navigator.vibrate) navigator.vibrate(10);
+  });
+  $('#mgReset').onclick = () => {
+    mg = 0; $('#mg').textContent = 0; $('#mgMeter').style.width = 0;
+    $('#mgStatus').textContent = 'caffeine today, of 400'; $('#mgReset').hidden = true;
+  };
 
   // Chart: noisy weigh-ins and the app's smoothed trend (10% moving average).
   let seed = 7;
