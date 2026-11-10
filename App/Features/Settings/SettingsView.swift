@@ -86,7 +86,7 @@ struct SettingsView: View {
             }
 
             Section("Your data") {
-                LabeledContent("Sync", value: AppContainer.isCloudSynced ? "iCloud" : "This device only")
+                SyncStatusRow()
                 ShareLink(item: CSVExport(foods: foods, drinks: drinks, exercises: exercises, weights: weights),
                           preview: SharePreview("Sensible export.csv")) {
                     Label("Export as CSV", systemImage: "square.and.arrow.up")
@@ -161,5 +161,34 @@ struct SettingsView: View {
 #Preview {
     PreviewHost { profile in
         NavigationStack { SettingsView(profile: profile) }
+    }
+}
+
+/// Shows whether iCloud sync is actually working, from the sync engine's own events.
+struct SyncStatusRow: View {
+    private let monitor = SyncMonitor.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            LabeledContent("Sync") {
+                if !AppContainer.isCloudSynced {
+                    Text("This device only")
+                } else if monitor.isSyncing {
+                    Text("Syncing…")
+                } else if monitor.lastError != nil {
+                    Label("Not syncing", systemImage: "exclamationmark.icloud").foregroundStyle(Theme.indulgent)
+                } else if let last = monitor.lastSuccess {
+                    Text("iCloud · \(last.formatted(.relative(presentation: .named)))")
+                } else {
+                    Text("iCloud · waiting")
+                }
+            }
+            if AppContainer.isCloudSynced, let error = monitor.lastError {
+                Text(error).font(.caption).foregroundStyle(.secondary)
+            } else if !AppContainer.isCloudSynced {
+                Text("Sign in to iCloud on this device to sync with your other devices.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
     }
 }

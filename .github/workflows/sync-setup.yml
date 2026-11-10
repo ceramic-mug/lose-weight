@@ -1,0 +1,98 @@
+# Builds a one-time "Sync setup" Mac app that creates the iCloud database layout (schema)
+# in CloudKit's Development environment. Download it from the run, open it once, then
+# click "Deploy Schema Changes" in CloudKit Console. Steps: docs/SYNC_SETUP.md.
+name: Sync setup (Mac)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mac_udid:
+        description: "Your Mac's Provisioning UDID (System Information › Hardware)"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      BUNDLE_ID: ${{ secrets.BUNDLE_ID || 'com.ceramicmug.loseweight' }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      MAC_UDID: ${{ inputs.mac_udid }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use the newest Xcode 26
+        run: |
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -v -i beta | sort -V | tail -1)
+          [ -z "$X" ] && X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$X" ]; then echo "::error::No Xcode 26 on this runner"; exit 1; fi
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+
+      - name: Use bundle ID ${{ env.BUNDLE_ID }}
+        run: grep -rl "com.ceramicmug.loseweight" project.yml Config | xargs sed -i '' "s/com\.ceramicmug\.loseweight/${BUNDLE_ID}/g"
+
+      - name: Install API key
+        run: |
+          mkdir -p "$RUNNER_TEMP/keys"
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8"
+          echo "KEY_PATH=$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8" >> "$GITHUB_ENV"
+
+      - name: Apple setup (app ID, Team ID)
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet pyjwt cryptography pyyaml
+          "$RUNNER_TEMP/venv/bin/python" .github/scripts/asc_setup.py
+
+      - name: Register this Mac, development certificate and profile
+        run: '"$RUNNER_TEMP/venv/bin/python" .github/scripts/signing.py create macdev'
+
+      - name: Sign the app target with the development profile
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" - <<'PY'
+          import os, yaml
+          spec = yaml.safe_load(open("project.yml"))
+          spec["targets"]["LoseWeight"]["settings"]["base"].update({
+              "DEVELOPMENT_TEAM": os.environ["TEAM_ID"],
+              "CODE_SIGN_STYLE": "Manual",
+              "CODE_SIGN_IDENTITY[sdk=macosx*]": "Apple Development",
+              "PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]": os.environ["CI_PROFILE_NAME"],
+              "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": "Config/LoseWeight-macOS-SyncSetup.entitlements",
+          })
+          yaml.safe_dump(spec, open("project.yml", "w"), sort_keys=False)
+          PY
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen
+
+      - name: Build
+        run: |
+          xcodebuild build -quiet \
+            -project LoseWeight.xcodeproj -scheme LoseWeight \
+            -configuration Debug \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            ONLY_ACTIVE_ARCH=NO \
+            SWIFT_ACTIVE_COMPILATION_CONDITIONS='DEBUG SYNC_SETUP'
+          APP="$RUNNER_TEMP/dd/Build/Products/Debug/LoseWeight.app"
+          codesign --verify --deep --strict "$APP"
+          codesign -d --entitlements - "$APP" | head -40
+          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/Sensible-SyncSetup.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Sensible-SyncSetup
+          path: ${{ runner.temp }}/Sensible-SyncSetup.zip
+          retention-days: 7
+
+      - name: Remove API key and keychain
+        if: always()
+        run: |
+          rm -rf "$RUNNER_TEMP/keys"
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true

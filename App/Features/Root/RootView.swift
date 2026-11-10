@@ -9,6 +9,9 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
+        #if SYNC_SETUP
+        SyncSetupView()
+        #else
         Group {
             if let profile = profiles.current, profile.hasOnboarded {
                 MainView(profile: profile)
@@ -20,6 +23,7 @@ struct RootView: View {
                 OnboardingView(existing: profiles.current)
             }
         }
+        #endif
     }
 }
 

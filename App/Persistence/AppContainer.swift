@@ -18,6 +18,7 @@ enum AppContainer {
     @MainActor
     static func make(inMemory: Bool = false) -> ModelContainer {
         if !inMemory {
+            _ = SyncMonitor.shared // start listening before the store loads
             let cloud = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
             if let container = try? ModelContainer(for: schema, configurations: cloud) {
                 isCloudSynced = FileManager.default.ubiquityIdentityToken != nil

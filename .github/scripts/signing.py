@@ -57,12 +57,31 @@ def new_certificate(cert_type: str) -> tuple[str, bytes]:
     return cert["id"], p12
 
 
+def register_mac(udid: str) -> str:
+    """Find or register a Mac by its Provisioning UDID; returns the device id."""
+    udid = udid.strip()
+    found = api("GET", f"/v1/devices?filter[udid]={udid}&limit=200")["data"]
+    if found:
+        print(f"Mac {udid} is already registered.")
+        return found[0]["id"]
+    device = api("POST", "/v1/devices", {"data": {"type": "devices", "attributes": {
+        "name": "My Mac (Sensible sync setup)", "udid": udid, "platform": "MAC_OS"}}})["data"]
+    print(f"Registered Mac {udid}.")
+    return device["id"]
+
+
 def create(platform: str) -> None:
     bundle_id = os.environ["BUNDLE_ID"]
-    mac = platform == "mac"
+    # "macdev": a development-signed Mac build for one registered Mac (sync setup helper).
+    dev = platform == "macdev"
+    mac = platform in ("mac", "macdev")
 
-    # 1. Certificates: Apple Distribution, plus the installer certificate the Mac .pkg needs.
-    types = ["DISTRIBUTION"] + (["MAC_INSTALLER_DISTRIBUTION"] if mac else [])
+    # 1. Certificates: Apple Distribution, plus the installer certificate the Mac .pkg needs;
+    #    or a single Apple Development certificate for the dev build.
+    if dev:
+        types = ["DEVELOPMENT"]
+    else:
+        types = ["DISTRIBUTION"] + (["MAC_INSTALLER_DISTRIBUTION"] if mac else [])
     certs = []
     cert_ids: list[str] = []
     for t in types:
@@ -75,13 +94,17 @@ def create(platform: str) -> None:
     found = api("GET", f"/v1/bundleIds?filter[identifier]={bundle_id}")["data"]
     bid = next(b for b in found if b["attributes"]["identifier"] == bundle_id)
     name = f"Sensible CI {RUN} {platform}"
+    relationships = {
+        "bundleId": {"data": {"type": "bundleIds", "id": bid["id"]}},
+        "certificates": {"data": [{"type": "certificates", "id": cert_ids[0]}]},
+    }
+    if dev:
+        relationships["devices"] = {"data": [{"type": "devices", "id": register_mac(os.environ["MAC_UDID"])}]}
+    profile_type = "MAC_APP_DEVELOPMENT" if dev else ("MAC_APP_STORE" if mac else "IOS_APP_STORE")
     profile = api("POST", "/v1/profiles", {"data": {
         "type": "profiles",
-        "attributes": {"name": name, "profileType": "MAC_APP_STORE" if mac else "IOS_APP_STORE"},
-        "relationships": {
-            "bundleId": {"data": {"type": "bundleIds", "id": bid["id"]}},
-            "certificates": {"data": [{"type": "certificates", "id": cert_ids[0]}]},
-        },
+        "attributes": {"name": name, "profileType": profile_type},
+        "relationships": relationships,
     }})["data"]
     env_out(CI_PROFILE_ID=profile["id"], CI_PROFILE_NAME=name)
     content = base64.b64decode(profile["attributes"]["profileContent"])
