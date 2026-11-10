@@ -9,6 +9,7 @@ Nothing is kept between runs, so no signing secrets need to be stored. Revoking 
 distribution certificate does not affect builds already uploaded to TestFlight.
 """
 import base64
+from datetime import datetime, timedelta, timezone
 import os
 import plistlib
 import subprocess
@@ -57,6 +58,29 @@ def new_certificate(cert_type: str) -> tuple[str, bytes]:
     return cert["id"], p12
 
 
+# Until 2026-11-10 the iPhone archive used Xcode automatic signing, which made a new
+# development certificate on every run until Apple's limit was reached. With the account
+# owner's OK, revoke those once so the Sync setup helper can get one. Certificates made
+# after the cutoff are left alone.
+LEFTOVER_CUTOFF = datetime(2026, 11, 10, 3, 0, tzinfo=timezone.utc)
+
+
+def revoke_leftover_dev_certs() -> None:
+    for cert_type in ("DEVELOPMENT", "IOS_DEVELOPMENT", "MAC_APP_DEVELOPMENT"):
+        certs = api("GET", f"/v1/certificates?filter[certificateType]={cert_type}&limit=200")["data"]
+        for c in certs:
+            expires = c["attributes"].get("expirationDate")
+            if not expires:
+                continue
+            created = datetime.fromisoformat(expires.replace("Z", "+00:00")) - timedelta(days=365)
+            if created < LEFTOVER_CUTOFF:
+                try:
+                    api("DELETE", f"/v1/certificates/{c['id']}")
+                    print(f"Revoked leftover {cert_type} certificate {c['id']} (created ~{created:%Y-%m-%d}).")
+                except SystemExit:
+                    pass
+
+
 def register_mac(udid: str) -> str:
     """Find or register a Mac by its Provisioning UDID; returns the device id."""
     udid = udid.strip()
@@ -79,6 +103,7 @@ def create(platform: str) -> None:
     # 1. Certificates: Apple Distribution, plus the installer certificate the Mac .pkg needs;
     #    or a single Apple Development certificate for the dev build.
     if dev:
+        revoke_leftover_dev_certs()
         types = ["DEVELOPMENT"]
     else:
         types = ["DISTRIBUTION"] + (["MAC_INSTALLER_DISTRIBUTION"] if mac else [])
