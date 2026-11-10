@@ -7,7 +7,7 @@ struct HistoryView: View {
     let profile: UserProfile
 
     enum Filter: String, CaseIterable, Identifiable {
-        case all, food, drink, exercise, weight
+        case all, weight, food, exercise, drink
         var id: String { rawValue }
         var title: String {
             switch self {

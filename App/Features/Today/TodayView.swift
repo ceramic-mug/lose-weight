@@ -27,20 +27,22 @@ struct TodayView: View {
         ScrollView {
             VStack(spacing: Theme.spacing) {
                 quickLog
+                // Order of importance: weight, food, exercise, drink.
                 if isWide {
+                    WeightCard(weights: todaysWeights, units: profile.units)
                     HStack(alignment: .top, spacing: Theme.spacing) {
                         BudgetCard(budget: budget, showNumbers: profile.showCalorieNumbers)
                         VStack(spacing: Theme.spacing) {
                             ActivityCard(exercises: todaysExercises, showNumbers: profile.showCalorieNumbers)
-                            WeightCard(weights: todaysWeights, units: profile.units)
+                            DrinksCard(drinks: todaysDrinks)
                         }
                     }
                 } else {
+                    WeightCard(weights: todaysWeights, units: profile.units)
                     BudgetCard(budget: budget, showNumbers: profile.showCalorieNumbers)
                     ActivityCard(exercises: todaysExercises, showNumbers: profile.showCalorieNumbers)
-                    WeightCard(weights: todaysWeights, units: profile.units)
+                    DrinksCard(drinks: todaysDrinks)
                 }
-                DrinksCard(drinks: todaysDrinks)
                 TodayLogCard(
                     foods: foods.filter { Calendar.current.isDateInToday($0.timestamp) },
                     drinks: todaysDrinks,
@@ -69,10 +71,10 @@ struct TodayView: View {
 
     private var quickLog: some View {
         HStack(spacing: 10) {
-            QuickLogButton(title: "Food", systemImage: "fork.knife", tint: Theme.food) { router.sheet = .food }
-            QuickLogButton(title: "Drink", systemImage: "cup.and.saucer.fill", tint: Theme.drink) { router.sheet = .drink }
-            QuickLogButton(title: "Exercise", systemImage: "figure.walk", tint: Theme.exercise) { router.sheet = .exercise }
             QuickLogButton(title: "Weight", systemImage: "scalemass", tint: Theme.weight) { router.sheet = .weight }
+            QuickLogButton(title: "Food", systemImage: "fork.knife", tint: Theme.food) { router.sheet = .food }
+            QuickLogButton(title: "Exercise", systemImage: "figure.walk", tint: Theme.exercise) { router.sheet = .exercise }
+            QuickLogButton(title: "Drink", systemImage: "cup.and.saucer.fill", tint: Theme.drink) { router.sheet = .drink }
         }
     }
 
@@ -280,16 +282,16 @@ struct TodayLogCard: View {
                     }
                 }
             }
-            if !drinks.isEmpty {
-                Text("Drinks").font(.caption.weight(.semibold)).foregroundStyle(.secondary).padding(.top, 4)
-                ForEach(drinks.sorted { $0.timestamp < $1.timestamp }) { item in
-                    row(item.row(showNumbers: showNumbers), onTap: { editingDrink = item }) { context.delete(item) }
-                }
-            }
             if !exercises.isEmpty {
                 Text("Exercise").font(.caption.weight(.semibold)).foregroundStyle(.secondary).padding(.top, 4)
                 ForEach(exercises.sorted { $0.timestamp < $1.timestamp }) { item in
                     row(item.row, onTap: { editingExercise = item }) { context.delete(item) }
+                }
+            }
+            if !drinks.isEmpty {
+                Text("Drinks").font(.caption.weight(.semibold)).foregroundStyle(.secondary).padding(.top, 4)
+                ForEach(drinks.sorted { $0.timestamp < $1.timestamp }) { item in
+                    row(item.row(showNumbers: showNumbers), onTap: { editingDrink = item }) { context.delete(item) }
                 }
             }
         }
