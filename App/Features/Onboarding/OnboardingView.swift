@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 import SwiftData
 import LoseWeightCore
 
@@ -13,8 +16,118 @@ struct OnboardingView: View {
     @State private var draft = ProfileDraft()
 
     private let lastStep = 5
+    private let stepTitles = ["Welcome", "About you", "Weight", "Activity", "Goal", "Options"]
 
     var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        phoneBody
+        #endif
+    }
+
+    @ViewBuilder
+    private var stepContent: some View {
+        switch step {
+        case 0: welcome
+        case 1: AboutYouStep(draft: $draft)
+        case 2: WeightStep(draft: $draft)
+        case 3: ActivityStep(draft: $draft)
+        case 4: GoalStep(draft: $draft)
+        default: FinishStep(draft: $draft)
+        }
+    }
+
+    private var primaryTitle: String { step == lastStep ? "Start" : (step == 0 ? "Get started" : "Continue") }
+
+    private func advance() {
+        guard canContinue else { return }
+        if step == lastStep { finish() } else { withAnimation(.snappy) { step += 1 } }
+    }
+
+    #if os(macOS)
+    /// Mac: a setup-assistant layout with the steps listed on the left and keyboard shortcuts.
+    private var macBody: some View {
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 22) {
+                HStack(spacing: 12) {
+                    Image(nsImage: NSApplication.shared.applicationIconImage)
+                        .resizable()
+                        .frame(width: 44, height: 44)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Sensible").font(.title2.weight(.bold))
+                        Text("weight loss").foregroundStyle(.secondary)
+                    }
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(stepTitles.indices, id: \.self) { i in
+                        HStack(spacing: 10) {
+                            ZStack {
+                                Circle().fill(i < step ? Theme.accent : (i == step ? Theme.accent.opacity(0.15) : Color.clear))
+                                Circle().strokeBorder(i <= step ? Theme.accent : Color.secondary.opacity(0.4), lineWidth: 1.5)
+                                if i < step {
+                                    Image(systemName: "checkmark").font(.caption2.weight(.bold)).foregroundStyle(.white)
+                                } else {
+                                    Text("\(i + 1)").font(.caption2.weight(.semibold))
+                                        .foregroundStyle(i == step ? Theme.accent : .secondary)
+                                }
+                            }
+                            .frame(width: 22, height: 22)
+                            Text(stepTitles[i])
+                                .fontWeight(i == step ? .semibold : .regular)
+                                .foregroundStyle(i <= step ? .primary : .secondary)
+                        }
+                        .padding(.vertical, 6)
+                        .contentShape(Rectangle())
+                        // Jump back to any step already done.
+                        .onTapGesture { if i < step { withAnimation(.snappy) { step = i } } }
+                    }
+                }
+                Spacer()
+                Text("General guidance, not medical advice.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(28)
+            .frame(width: 250, alignment: .leading)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .background(Theme.subtleFill)
+
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        stepContent
+                    }
+                    .padding(.horizontal, 48)
+                    .padding(.vertical, 40)
+                    .frame(maxWidth: 600, alignment: .leading)
+                    .frame(maxWidth: .infinity)
+                    .id(step)
+                    .transition(.opacity)
+                }
+                Divider()
+                HStack {
+                    if step > 0 {
+                        Button("Back") { withAnimation(.snappy) { step -= 1 } }
+                            .keyboardShortcut(.cancelAction)
+                    }
+                    Spacer()
+                    Button(primaryTitle, action: advance)
+                        .keyboardShortcut(.defaultAction)
+                        .controlSize(.large)
+                        .disabled(!canContinue)
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
+            }
+        }
+        .frame(minWidth: 820, minHeight: 600)
+        .background(Theme.pageBackground)
+        .tint(Theme.accent)
+    }
+    #endif
+
+    private var phoneBody: some View {
         VStack(spacing: 0) {
             ProgressView(value: Double(step), total: Double(lastStep))
                 .tint(Theme.accent)
@@ -24,14 +137,7 @@ struct OnboardingView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    switch step {
-                    case 0: welcome
-                    case 1: AboutYouStep(draft: $draft)
-                    case 2: WeightStep(draft: $draft)
-                    case 3: ActivityStep(draft: $draft)
-                    case 4: GoalStep(draft: $draft)
-                    default: FinishStep(draft: $draft)
-                    }
+                    stepContent
                 }
                 .padding(24)
                 .frame(maxWidth: 560, alignment: .leading)
@@ -47,9 +153,7 @@ struct OnboardingView: View {
                         .buttonStyle(.bordered)
                 }
                 Spacer()
-                Button(step == lastStep ? "Start" : (step == 0 ? "Get started" : "Continue")) {
-                    if step == lastStep { finish() } else { withAnimation(.snappy) { step += 1 } }
-                }
+                Button(primaryTitle, action: advance)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .disabled(!canContinue)

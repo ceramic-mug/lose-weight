@@ -9,11 +9,12 @@ final class AppRouter {
     }
 
     enum Section: String, CaseIterable, Identifiable, Hashable {
-        case today, history, trends, insights, settings
+        case analysis, today, history, trends, insights, settings
         var id: String { rawValue }
 
         var title: String {
             switch self {
+            case .analysis: "Analysis"
             case .today: "Today"
             case .history: "History"
             case .trends: "Trends"
@@ -22,8 +23,18 @@ final class AppRouter {
             }
         }
 
+        /// The phone is for logging and quick glances; Analysis is Mac-only.
+        static var visible: [Section] {
+            #if os(macOS)
+            [.analysis, .today, .history, .trends, .insights, .settings]
+            #else
+            [.today, .history, .trends, .insights, .settings]
+            #endif
+        }
+
         var systemImage: String {
             switch self {
+            case .analysis: "chart.bar.doc.horizontal"
             case .today: "sun.max"
             case .history: "clock.arrow.circlepath"
             case .trends: "chart.xyaxis.line"
@@ -34,5 +45,6 @@ final class AppRouter {
     }
 
     var sheet: Sheet?
-    var section: Section = .today
+    /// The Mac opens on Analysis (it's the place for looking at data); the phone on Today.
+    var section: Section = Section.visible[0]
 }

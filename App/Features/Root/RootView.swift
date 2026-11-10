@@ -50,7 +50,7 @@ struct MainView: View {
         @Bindable var router = router
         #if os(macOS)
         NavigationSplitView {
-            List(AppRouter.Section.allCases, selection: Binding(
+            List(AppRouter.Section.visible, selection: Binding(
                 get: { router.section },
                 set: { if let s = $0 { router.section = s } }
             )) { section in
@@ -62,9 +62,10 @@ struct MainView: View {
                 screen(for: router.section)
             }
         }
+        .frame(minWidth: 960, minHeight: 640)
         #else
         TabView(selection: $router.section) {
-            ForEach(AppRouter.Section.allCases) { section in
+            ForEach(AppRouter.Section.visible) { section in
                 NavigationStack {
                     screen(for: section)
                 }
@@ -78,6 +79,7 @@ struct MainView: View {
     @ViewBuilder
     private func screen(for section: AppRouter.Section) -> some View {
         switch section {
+        case .analysis: AnalysisView(profile: profile)
         case .today: TodayView(profile: profile)
         case .history: HistoryView(profile: profile)
         case .trends: TrendsView(profile: profile)

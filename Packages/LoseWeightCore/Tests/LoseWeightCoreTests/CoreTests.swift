@@ -181,6 +181,52 @@ final class DrinkTests: XCTestCase {
     }
 }
 
+final class AnalysisTests: XCTestCase {
+    func testQualityGrid() {
+        let food = [
+            FoodLog(date: day(4, hour: 19), category: .fastFood, healthiness: .indulgent, portion: .regular, meal: .dinner),
+            FoodLog(date: day(11, hour: 19), category: .fastFood, healthiness: .balanced, portion: .regular, meal: .dinner),
+            FoodLog(date: day(0, hour: 8), category: .homeCooked, healthiness: .lighter, portion: .regular, meal: .breakfast),
+            FoodLog(date: day(0, hour: 9), category: .drink, healthiness: .indulgent, portion: .regular),
+        ]
+        let grid = Analysis.qualityGrid(food, calendar: utc)
+        XCTAssertEqual(grid.count, 2, "drinks are excluded")
+        let fridayDinner = grid.first { $0.weekday == 6 && $0.slot == .dinner }!
+        XCTAssertEqual(fridayDinner.count, 2)
+        XCTAssertEqual(fridayDinner.quality, 0.3, accuracy: 1e-9)
+    }
+
+    func testCorrelation() {
+        XCTAssertEqual(Analysis.correlation([1, 2, 3, 4], [2, 4, 6, 8])!, 1, accuracy: 1e-9)
+        XCTAssertEqual(Analysis.correlation([1, 2, 3, 4], [8, 6, 4, 2])!, -1, accuracy: 1e-9)
+        XCTAssertNil(Analysis.correlation([1, 2, 3], [1, 2, 3]))
+        XCTAssertNil(Analysis.correlation([1, 1, 1, 1], [1, 2, 3, 4]))
+        XCTAssertEqual(Analysis.describe(-0.6), "strong")
+    }
+
+    func testCaffeineByHour() {
+        let drinks = [
+            DrinkLog(date: day(0, hour: 8), style: .latte, size: .medium),    // 150
+            DrinkLog(date: day(1, hour: 8), style: .latte, size: .medium),    // 150
+            DrinkLog(date: day(1, hour: 15), style: .espresso, size: .small), // 63
+        ]
+        let byHour = Analysis.caffeineByHour(drinks, calendar: utc)
+        XCTAssertEqual(byHour[8]!, 150, accuracy: 1e-9)  // 300 over 2 days
+        XCTAssertEqual(byHour[15]!, 31.5, accuracy: 1e-9)
+    }
+
+    func testWeeks() {
+        // Steady loss of 0.1 kg/day over 5 weeks; 30 min exercise every other day.
+        let weights = (0..<35).map { WeightSample(date: day($0, hour: 7), kg: 90 - 0.1 * Double($0)) }
+        let exercise = (0..<35).filter { $0 % 2 == 0 }.map { ExerciseLog(date: day($0), type: .walk, intensity: .moderate, minutes: 30) }
+        let weeks = Analysis.weeks(food: [], exercise: exercise, weights: weights, from: day(0), to: day(34), calendar: utc)
+        XCTAssertEqual(weeks.count, 5)
+        XCTAssertEqual(weeks[1].activeMinutes, 120) // Sun-start week, days 6..12: 6, 8, 10, 12
+        XCTAssertNil(weeks[0].weightChangeKg, "no reading before the first week")
+        XCTAssertLessThan(weeks[2].weightChangeKg!, 0)
+    }
+}
+
 final class AuditTests: XCTestCase {
     func testWeeklyReport() {
         var food: [FoodLog] = []

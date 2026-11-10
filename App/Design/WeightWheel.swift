@@ -42,12 +42,22 @@ struct WeightWheel: View {
         .frame(maxWidth: .infinity)
         .frame(height: 150)
         #else
-        Stepper(
-            value: Binding(get: { units.displayWeight(fromKg: kg) }, set: { kg = units.kg(fromDisplay: $0) }),
-            in: Double(range.lowerBound)...Double(range.upperBound),
-            step: units.weightStep
-        ) {
-            Text(units.formatWeight(kg)).font(.title3.weight(.semibold)).monospacedDigit()
+        // Mac: type it, or nudge with the stepper. Values are kept in a sensible range,
+        // so a stray extra digit can't turn 182 into 1820.
+        let display = Binding<Double>(
+            get: { (units.displayWeight(fromKg: kg) * 10).rounded() / 10 },
+            set: { kg = units.kg(fromDisplay: min(max($0, Double(range.lowerBound)), Double(range.upperBound))) }
+        )
+        HStack(spacing: 8) {
+            TextField("Weight", value: display, format: .number.precision(.fractionLength(0...1)))
+                .textFieldStyle(.roundedBorder)
+                .font(.title3.monospacedDigit())
+                .multilineTextAlignment(.trailing)
+                .frame(width: 96)
+            Text(units.weightSymbol).foregroundStyle(.secondary)
+            Stepper("Adjust", value: display, in: Double(range.lowerBound)...Double(range.upperBound), step: units.weightStep)
+                .labelsHidden()
+            Spacer(minLength: 0)
         }
         #endif
     }

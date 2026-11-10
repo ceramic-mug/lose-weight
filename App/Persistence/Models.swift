@@ -48,7 +48,7 @@ final class FoodEntry {
     var meal: MealSlot { MealSlot(rawValue: mealRaw) ?? .snack }
     var calories: CalorieRange { CalorieRange(kcalLow, kcalHigh) }
 
-    var log: FoodLog { FoodLog(date: timestamp, category: category, healthiness: healthiness, portion: portion) }
+    var log: FoodLog { FoodLog(date: timestamp, category: category, healthiness: healthiness, portion: portion, meal: meal) }
 
     /// Used for "recent" chips: the same choice made again.
     var comboKey: String { "\(categoryRaw)|\(healthinessRaw)|\(portionRaw)" }

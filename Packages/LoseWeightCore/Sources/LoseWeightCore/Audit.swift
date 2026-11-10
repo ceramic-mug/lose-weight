@@ -7,12 +7,14 @@ public struct FoodLog: Equatable, Sendable {
     public var category: FoodCategory
     public var healthiness: Healthiness
     public var portion: Portion
+    public var meal: MealSlot
 
-    public init(date: Date, category: FoodCategory, healthiness: Healthiness, portion: Portion) {
+    public init(date: Date, category: FoodCategory, healthiness: Healthiness, portion: Portion, meal: MealSlot? = nil) {
         self.date = date
         self.category = category
         self.healthiness = healthiness
         self.portion = portion
+        self.meal = meal ?? MealSlot.suggested(for: date, category: category)
     }
 
     public var calories: CalorieRange { EnergyEstimator.calories(category: category, healthiness: healthiness, portion: portion) }
