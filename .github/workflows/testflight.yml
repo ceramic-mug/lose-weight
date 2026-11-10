@@ -58,6 +58,27 @@ jobs:
           "$RUNNER_TEMP/venv/bin/pip" install --quiet pyjwt cryptography
           "$RUNNER_TEMP/venv/bin/python" .github/scripts/asc_setup.py
 
+      - name: Temporary distribution certificate and profile
+        run: '"$RUNNER_TEMP/venv/bin/python" .github/scripts/signing.py create ios'
+
+      # Manual signing on the app target only (the Swift package can't take a profile).
+      # Automatic signing used to create a new development certificate on every run.
+      - name: Sign the app target with the profile
+        run: |
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet pyyaml
+          "$RUNNER_TEMP/venv/bin/python" - <<'PY'
+          import os, yaml
+          spec = yaml.safe_load(open("project.yml"))
+          spec["targets"]["LoseWeight"]["settings"]["base"].update({
+              "DEVELOPMENT_TEAM": os.environ["TEAM_ID"],
+              "CODE_SIGN_STYLE": "Manual",
+              "CODE_SIGN_IDENTITY[sdk=iphoneos*]": "Apple Distribution",
+              "PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]": os.environ["CI_PROFILE_NAME"],
+              "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]": "Config/LoseWeight-iOS-TestFlight.entitlements",
+          })
+          yaml.safe_dump(spec, open("project.yml", "w"), sort_keys=False)
+          PY
+
       - name: Generate Xcode project
         run: |
           brew install xcodegen
@@ -69,17 +90,7 @@ jobs:
             -project LoseWeight.xcodeproj -scheme LoseWeight \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/LoseWeight.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_ENTITLEMENTS=Config/LoseWeight-iOS-TestFlight.entitlements \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}"
-
-      - name: Temporary distribution certificate and profile
-        run: '"$RUNNER_TEMP/venv/bin/python" .github/scripts/signing.py create ios'
 
       - name: Upload to TestFlight
         run: |
