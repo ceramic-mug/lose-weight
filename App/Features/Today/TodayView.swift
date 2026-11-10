@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import Charts
 import LoseWeightCore
 
 struct TodayView: View {
@@ -23,6 +22,8 @@ struct TodayView: View {
         let snap = snapshot
         let budget = snap.dayBudget(foods: foods, drinks: drinks, exercises: exercises)
         let todaysDrinks = drinks.filter { Calendar.current.isDateInToday($0.timestamp) }
+        let todaysExercises = exercises.filter { Calendar.current.isDateInToday($0.timestamp) }
+        let todaysWeights = weights.filter { Calendar.current.isDateInToday($0.timestamp) }
         ScrollView {
             VStack(spacing: Theme.spacing) {
                 quickLog
@@ -30,21 +31,20 @@ struct TodayView: View {
                     HStack(alignment: .top, spacing: Theme.spacing) {
                         BudgetCard(budget: budget, showNumbers: profile.showCalorieNumbers)
                         VStack(spacing: Theme.spacing) {
-                            DrinksCard(drinks: todaysDrinks)
-                            ActivityCard(exercises: exercises)
-                            WeightCard(snapshot: snap)
+                            ActivityCard(exercises: todaysExercises, showNumbers: profile.showCalorieNumbers)
+                            WeightCard(weights: todaysWeights, units: profile.units)
                         }
                     }
                 } else {
                     BudgetCard(budget: budget, showNumbers: profile.showCalorieNumbers)
-                    DrinksCard(drinks: todaysDrinks)
-                    ActivityCard(exercises: exercises)
-                    WeightCard(snapshot: snap)
+                    ActivityCard(exercises: todaysExercises, showNumbers: profile.showCalorieNumbers)
+                    WeightCard(weights: todaysWeights, units: profile.units)
                 }
+                DrinksCard(drinks: todaysDrinks)
                 TodayLogCard(
                     foods: foods.filter { Calendar.current.isDateInToday($0.timestamp) },
                     drinks: todaysDrinks,
-                    exercises: exercises.filter { Calendar.current.isDateInToday($0.timestamp) },
+                    exercises: todaysExercises,
                     showNumbers: profile.showCalorieNumbers,
                     weightKg: snap.weightForExerciseKg
                 )
@@ -140,30 +140,76 @@ struct BudgetCard: View {
 
 // MARK: - Activity
 
+/// Today's movement only; weekly totals live on Trends and Insights.
 struct ActivityCard: View {
+    /// Today's workouts.
     let exercises: [ExerciseEntry]
+    let showNumbers: Bool
+    @Environment(AppRouter.self) private var router
+
+    /// 150 minutes a week is about 30 minutes on 5 days.
+    private let dailyTarget: Double = 30
 
     var body: some View {
-        let week = Calendar.current.weekInterval(containing: .now)
-        let thisWeek = exercises.filter { week.contains($0.timestamp) }
-        let minutes = thisWeek.reduce(0) { $0 + $1.minutes }
-        let strengthDays = Set(thisWeek.filter { $0.type.isMuscleStrengthening }.map { Calendar.current.startOfDay(for: $0.timestamp) }).count
-        let goal = EnergyConstants.weeklyActiveMinutesGoal
+        let minutes = exercises.reduce(0) { $0 + $1.minutes }
+        let kcal = exercises.reduce(0) { $0 + $1.netKcal }
+        let sessions = exercises.sorted { $0.timestamp < $1.timestamp }
+            .map { "\($0.type.displayName) \(Int($0.minutes))" }
+            .joined(separator: " · ")
 
-        VStack(alignment: .leading, spacing: 12) {
-            CardHeader(title: "Active this week", systemImage: "figure.run", tint: Theme.exercise,
-                       trailing: "\(Int(minutes)) / \(Int(goal)) min")
-            GoalBar(value: minutes, goal: goal, tint: Theme.exercise)
-            HStack {
-                Spacer()
-                HStack(spacing: 4) {
-                    ForEach(0..<EnergyConstants.weeklyStrengthDaysGoal, id: \.self) { i in
-                        Image(systemName: i < strengthDays ? "dumbbell.fill" : "dumbbell")
-                            .foregroundStyle(i < strengthDays ? Theme.exercise : .secondary)
-                    }
+        VStack(alignment: .leading, spacing: 10) {
+            CardHeader(title: "Active today", systemImage: "figure.run", tint: Theme.exercise,
+                       trailing: showNumbers && kcal > 0 ? "+\(Format.kcal(kcal))" : nil)
+            if exercises.isEmpty {
+                HStack {
+                    EmptyHint(text: "No activity yet", systemImage: "figure.walk")
+                    Button("Log") { router.sheet = .exercise }
+                        .buttonStyle(.bordered)
+                        .tint(Theme.exercise)
                 }
-                .font(.caption)
-                .accessibilityLabel("\(strengthDays) of 2 strength days")
+            } else {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("\(Int(minutes)) min")
+                        .font(.title2.weight(.semibold))
+                        .monospacedDigit()
+                    Spacer()
+                    Text(sessions)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                GoalBar(value: minutes, goal: dailyTarget, tint: Theme.exercise, height: 6)
+            }
+        }
+        .card()
+    }
+}
+
+// MARK: - Weight
+
+/// Today's scale reading only; the smoothed trend lives on Trends.
+struct WeightCard: View {
+    /// Today's weigh-ins.
+    let weights: [WeightEntry]
+    let units: UnitSystem
+    @Environment(AppRouter.self) private var router
+
+    var body: some View {
+        let latest = weights.max { $0.timestamp < $1.timestamp }
+        VStack(alignment: .leading, spacing: 10) {
+            CardHeader(title: "Weight today", systemImage: "scalemass", tint: Theme.weight)
+            if let latest {
+                Text(units.formatWeight(latest.kg))
+                    .font(.title2.weight(.semibold))
+                    .monospacedDigit()
+            } else {
+                HStack {
+                    EmptyHint(text: "Not weighed in today", systemImage: "scalemass")
+                    Button("Log") { router.sheet = .weight }
+                        .buttonStyle(.bordered)
+                        .tint(Theme.weight)
+                }
             }
         }
         .card()
@@ -172,6 +218,7 @@ struct ActivityCard: View {
 
 // MARK: - Drinks
 
+/// One slim line: caffeine so far (bar to 400 mg) and glasses of water.
 struct DrinksCard: View {
     let drinks: [DrinkEntry]
 
@@ -180,66 +227,23 @@ struct DrinksCard: View {
         let waterMl = drinks.filter { $0.kind == .water }.reduce(0) { $0 + $1.ml }
         let glasses = Int((waterMl / DrinkMath.glassMl).rounded())
         let limit = DrinkMath.caffeineDailyLimitMg
-        let over = caffeine > limit
 
-        VStack(alignment: .leading, spacing: 12) {
-            CardHeader(title: "Drinks", systemImage: "cup.and.saucer.fill", tint: Theme.drink,
-                       trailing: drinks.isEmpty ? nil : "\(drinks.count) today")
-            HStack(alignment: .firstTextBaseline) {
-                Text("\(Int(caffeine)) mg")
-                    .font(.title3.weight(.semibold))
-                    .monospacedDigit()
-                Text("caffeine").font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                Label("\(glasses) glass\(glasses == 1 ? "" : "es")", systemImage: "drop.fill")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            GoalBar(value: caffeine, goal: limit, tint: over ? Theme.balanced : Theme.drink, height: 6)
+        HStack(spacing: 12) {
+            Image(systemName: "cup.and.saucer.fill")
+                .foregroundStyle(Theme.drink)
+                .font(.subheadline)
+            Text("\(Int(caffeine)) mg")
+                .font(.subheadline.weight(.medium))
+                .monospacedDigit()
+            GoalBar(value: caffeine, goal: limit, tint: caffeine > limit ? Theme.balanced : Theme.drink, height: 4)
+            Label("\(glasses)", systemImage: "drop.fill")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+                .accessibilityLabel("\(glasses) glasses of water")
         }
-        .card()
-    }
-}
-
-// MARK: - Weight
-
-struct WeightCard: View {
-    let snapshot: Snapshot
-
-    var body: some View {
-        let units = snapshot.units
-        let recent = Array(snapshot.trend.suffix(30))
-        VStack(alignment: .leading, spacing: 12) {
-            CardHeader(title: "Weight", systemImage: "scalemass", tint: Theme.weight,
-                       trailing: snapshot.kgPerWeek.map { "\(units.formatWeightChange($0)) / wk" })
-            if recent.isEmpty {
-                EmptyHint(text: "No weigh-ins yet", systemImage: "scalemass")
-            } else {
-                HStack(alignment: .bottom) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(units.formatWeight(snapshot.currentKg))
-                            .font(.title2.weight(.semibold))
-                            .monospacedDigit()
-                        Text("Goal \(units.formatWeight(snapshot.profile.goalWeightKg, decimals: 0))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Chart(recent) { p in
-                        LineMark(x: .value("Day", p.day), y: .value("Trend", units.displayWeight(fromKg: p.trendKg)))
-                            .interpolationMethod(.catmullRom)
-                            .foregroundStyle(Theme.weight)
-                    }
-                    .chartXAxis(.hidden)
-                    .chartYAxis(.hidden)
-                    .chartYScale(domain: .automatic(includesZero: false))
-                    .frame(width: 120, height: 44)
-                    .accessibilityHidden(true)
-                }
-                GoalBar(value: snapshot.goalProgress, goal: 1, tint: Theme.weight, height: 6)
-            }
-        }
-        .card()
+        .card(padding: 12)
+        .accessibilityElement(children: .combine)
     }
 }
 
